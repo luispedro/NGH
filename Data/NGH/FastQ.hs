@@ -18,7 +18,7 @@ import Control.Monad (void,liftM)
 data DNAwQuality = DNAwQuality
             { header :: B.ByteString
             , dna_seq :: B.ByteString
-            , quality :: (V.Vector Word8)
+            , qualities :: (V.Vector Word8)
             } deriving (Eq,Show)
 
 fastq :: Parser [DNAwQuality]
@@ -35,9 +35,9 @@ fastq1 = do
     h <- headerline
     sq <- seqlines
     void plus_sign
-    qs <- qualities (B.length sq)
+    qs <- readqualities (B.length sq)
     void $ (word8 eol)
-    return DNAwQuality { header=h, dna_seq=sq, quality=qs }
+    return DNAwQuality { header=h, dna_seq=sq, qualities=qs }
 
 ord8 :: Char -> Word8
 ord8 = fromInteger . toInteger . ord
@@ -50,7 +50,7 @@ joinseqs :: B.ByteString -> B.ByteString
 joinseqs = B.filter (/=eol)
 plus_sign = string "+\n"
 
-qualities n = V.fromList `liftM` (qualities' n)
+readqualities n = V.fromList `liftM` (qualities' n)
     where
         qualities' :: Int -> Parser [Word8]
         qualities' 0 = return []

@@ -11,4 +11,4 @@ Synopsis:Next-generation Sequence Analysis
 
 Library
     Build-Depends:base,bytestring,conduit,vector,attoparsec,attoparsec-conduit
-    Exposed-modules:Data.NGH.FastQ
+    Exposed-modules:Data.NGH.FastQ,Data.NGH.Trim
