@@ -1,5 +1,5 @@
 Name: NGH
-Version: 0.0.0
+Version: 0.0.0.0.0
 Cabal-Version: >= 1.2
 Build-Type: Simple
 License: MIT
@@ -10,4 +10,5 @@ Category:Bioinformatics
 Synopsis:Next-generation Sequence Analysis
 
 Library
-   Build-Depends:base
+    Build-Depends:base,bytestring,conduit,vector,attoparsec,attoparsec-conduit
+    Exposed-modules:Data.NGH.FastQ
