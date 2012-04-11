@@ -1,0 +1,13 @@
+Name: NGH
+Version: 0.0.0
+Cabal-Version: >= 1.2
+Build-Type: Simple
+License: MIT
+License-File:COPYING.MIT
+Author:Luis Pedro Coelho
+Homepage:http://luispedro.org/software/ngh
+Category:Bioinformatics
+Synopsis:Next-generation Sequence Analysis
+
+Library
+   Build-Depends:base
