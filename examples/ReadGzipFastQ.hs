@@ -4,11 +4,14 @@ import qualified Data.Conduit.Binary as CB -- bytes
 import Data.Conduit -- the core library
 import Data.Conduit.Zlib (ungzip)
 import Data.NGH.FastQ
+import Control.Monad.Trans
 
-main = do
-    fastq <- runResourceT $
+main = runResourceT $
         CB.sourceFile "input.fq.gz"
         =$= ungzip
-        $$ fastq_sink
-    print `mapM_` fastq
-    return ()
+        =$= CB.lines
+        =$= fastQConduit
+        $$ sinkIO (return ())
+                (\s -> return ())
+                (\_ sq -> (liftIO (print sq)) >> (return IOProcessing))
+                (\s -> return ())

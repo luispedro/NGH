@@ -10,5 +10,5 @@ Category:Bioinformatics
 Synopsis:Next-generation Sequence Analysis
 
 Library
-    Build-Depends:base,bytestring,conduit,vector,attoparsec,attoparsec-conduit
+    Build-Depends:base,bytestring,conduit,convertible,vector
     Exposed-modules:Data.NGH.FastQ,Data.NGH.Trim
