@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.NGH.FastQ
-    (
+    ( fastq_sink
+    , DNAwQuality(..)
     ) where
 
 import Data.Word
@@ -11,13 +12,14 @@ import qualified Data.ByteString as B
 import Data.Attoparsec.ByteString
 import Data.Conduit
 import Data.Conduit.Attoparsec
+import Control.Applicative ((<*))
 import Control.Monad (void,liftM)
 
 data DNAwQuality = DNAwQuality
             { header :: B.ByteString
             , dna_seq :: B.ByteString
             , quality :: (V.Vector Word8)
-            } deriving (Eq)
+            } deriving (Eq,Show)
 
 fastq :: Parser [DNAwQuality]
 fastq = do
@@ -34,15 +36,18 @@ fastq1 = do
     sq <- seqlines
     void plus_sign
     qs <- qualities (B.length sq)
+    void $ (word8 eol)
     return DNAwQuality { header=h, dna_seq=sq, quality=qs }
 
 ord8 :: Char -> Word8
 ord8 = fromInteger . toInteger . ord
+eol = ord8 '\n'
 
-line = takeTill (==(ord8 '\n'))
+line = takeTill (==eol) <* (word8 eol)
 headerline = (word8 (ord8 '@') >> line)
 seqlines = takeTill (== (ord8 '+')) >>= (return . joinseqs)
-joinseqs = (B.filter (== (ord8 '\n')))
+joinseqs :: B.ByteString -> B.ByteString
+joinseqs = B.filter (/=eol)
 plus_sign = string "+\n"
 
 qualities n = V.fromList `liftM` (qualities' n)
