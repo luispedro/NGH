@@ -22,19 +22,22 @@ data DNAwQuality = DNAwQuality
 newtype FQBuffer = FQBuffer [B.ByteString]
 
 fastQConduit :: (Monad m) => Conduit B.ByteString m DNAwQuality
-fastQConduit = conduitState init push close
+fastQConduit = conduitState empty push close
     where
         push (FQBuffer buf) line = return (if length buf == 3
-                            then StateProducing init [one]
+                            then StateProducing empty [one]
                             else StateProducing (FQBuffer (line:buf)) []
             ) where
-                one = DNAwQuality { dna_seq=seq, header=header, qualities=q line }
-                [_plus,seq,header] = buf
+                one = DNAwQuality { dna_seq=sq, header=h, qualities=q line }
+                [_plus,sq,h] = buf
                 q = V.fromList . (map qualN) . B.unpack
         close _ = return []
-        init = FQBuffer []
+        empty = FQBuffer []
 
 ord8 :: Char -> Word8
 ord8 = convert . ord
+
+qualN :: Word8 -> Word8
 qualN c | c > ord8 'A' = c - (ord8 'A')
-qualN c = (-1)
+qualN _ = (-1)
+

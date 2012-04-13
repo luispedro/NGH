@@ -4,9 +4,7 @@ module Data.NGH.Tests.Align
 
 import Test.Framework.TH
 import Test.HUnit
-import Test.QuickCheck
 import Test.Framework.Providers.HUnit
-import Test.Framework.Providers.QuickCheck2
 
 import qualified Data.Vector as V
 
