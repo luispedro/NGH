@@ -1,0 +1,40 @@
+{-# LANGUAGE TemplateHaskell #-}
+module Data.NGH.Tests.Trim
+    ( tests ) where
+
+import Test.Framework.TH
+import Test.HUnit
+import Test.Framework.Providers.HUnit
+
+import Data.NGH.Trim
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
+
+tests = $(testGroupGenerator)
+
+case_full19 = trimmed @?= expected
+    where
+        trimmed = trim_adapter
+            (BC.pack                   "ABBBBBA") 
+            (BC.pack "AAAAAAAAAAAAAAAAAAABBBBBA") 1 1
+        expected =
+            (BC.pack "AAAAAAAAAAAAAAAAAA")
+
+case_19 = trimmed @?= expected
+    where
+        trimmed = trim_adapter
+            (BC.pack                   "ABBBB") 
+            (BC.pack "AAAAAAAAAAAAAAAAAAABBBBBA") 0 1
+        expected =
+            (BC.pack "AAAAAAAAAAAAAAAAAA")
+
+case_mm2 = trimmed @?= expected
+    where
+        trimmed = trim_adapter
+            (BC.pack                   "ABBBBBA") 
+            (BC.pack "AAAAAAAAAAAAAAAAAAABCBBBA") 2 3
+        expected =
+            (BC.pack "AAAAAAAAAAAAAAAAAA")
+
+case_bSlice = (B.length (bSlice 0 10 (BC.pack "0123456789ABCDEF"))) @?= 10
+case_bSlice9 = (B.length (bSlice 1 10 (BC.pack "0123456789ABCDEF"))) @?= 9
