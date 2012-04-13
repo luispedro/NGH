@@ -10,5 +10,29 @@ Category:Bioinformatics
 Synopsis:Next-generation Sequence Analysis
 
 Library
-    Build-Depends:base,bytestring,conduit,convertible,primitive,vector
-    Exposed-modules:Data.NGH.FastQ,Data.NGH.Trim,Data.NGH.Align
+    Build-Depends:
+                base
+                ,bytestring
+                ,conduit
+                ,convertible
+                ,primitive
+                ,vector
+    Exposed-modules:
+                Data.NGH.FastQ
+                ,Data.NGH.Trim
+                ,Data.NGH.Align
+
+Test-Suite test-NGH
+    Type: exitcode-stdio-1.0
+    Main-Is: TestSuite.hs
+    Build-Depends:
+                HUnit
+                ,QuickCheck
+                ,test-framework
+                ,test-framework-hunit
+                ,test-framework-quickcheck2
+                ,test-framework-th
+    Other-Modules:
+        Data.NGH.Tests.Align
+
+
