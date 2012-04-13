@@ -2,12 +2,18 @@ Name: NGH
 Version: 0.0.0.0.0
 Cabal-Version: >= 1.2
 Build-Type: Simple
+
+Author:Luis Pedro Coelho
+Copyright:(C) 2012 Luis Pedro Coelho
 License: MIT
 License-File:COPYING.MIT
-Author:Luis Pedro Coelho
+Maintainer:luis@luispedro.org
+
 Homepage:http://luispedro.org/software/ngh
-Category:Bioinformatics
 Synopsis:Next-generation Sequence Analysis
+Category:Bioinformatics
+
+Tested-With: GHC==7.4.1
 
 Library
     Build-Depends:
@@ -39,5 +45,4 @@ Test-Suite test-NGH
     Other-Modules:
         Data.NGH.Tests.Align
     GHC-Options: -Wall -fwarn-tabs -fno-warn-missing-signatures
-
 
