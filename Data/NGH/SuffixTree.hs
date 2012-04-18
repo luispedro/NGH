@@ -57,9 +57,9 @@ instance Show Node where
 
 
 selectChild :: (GenSeq a, Eq (Base a)) => a -> Node -> Base a -> Maybe Node
-selectChild rseq n v = selectChild' (_children n)
+selectChild _ (Leaf _) _ = error "Data.NGH.SuffixTree.selectChild: Applied to Leaf"
+selectChild rseq Inner {_sdepth=sd, _children=cc} v = selectChild' cc
     where
-        sd = _sdepth n
         selectChild' [] = Nothing
         selectChild' (c:cs)
             | (rseq `seqindex` (_nodepos c + sd)) == v = Just c
@@ -95,7 +95,7 @@ down sti@STIterator{tree=st, node=n, itdepth=itd} c
 
 followSlink :: (GenSeq a, Eq (Base a)) => STIterator a -> STIterator a
 followSlink sti@STIterator{tree=st, node=nd, parent=par, itdepth=itd}
-    | (_sdepth nd) == 0 = assert (itd == 0) sti { parent=nd }
+    | itd == 0 = rootiterator st
     | otherwise = fromJust $ downmany s sti{node=next, parent=undefined, itdepth=(assert (start < itd) start)}
     where
         orig_pos = _nodepos nd

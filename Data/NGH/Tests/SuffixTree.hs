@@ -4,7 +4,9 @@ module Data.NGH.Tests.SuffixTree
 
 import Test.Framework.TH
 import Test.HUnit
+import Test.QuickCheck
 import Test.Framework.Providers.HUnit
+import Test.Framework.Providers.QuickCheck2
 
 import Data.NGH.SuffixTree
 
@@ -44,3 +46,18 @@ case_all_leaves = (all in_leaves [1..(length s)]) @? "Not all leaves were found"
         collect ell@(Leaf _) = [ell]
         collect n = concat (collect `map` _children n)
 
+
+newtype Dna = Dna Char
+instance Show Dna where
+    show (Dna c) = [c]
+
+instance Arbitrary Dna where
+    arbitrary = (elements (map Dna "actg"))
+
+tdna = buildTree "actgactgggattgataccatgatatgggatacatag$"
+prop_finds_match q = null q || (max_match q) > 0
+    where
+        q' = [c | (Dna c) <- q]
+        max_match q = maximum [depth | (_,_,depth) <- walk tdna q']
+
+case_ttc  = length (walk tdna "ttc") > 0 @? "Regression (found with quick check)"
