@@ -3,6 +3,9 @@ module Data.NGH.SuffixTree
     ( buildTree
     , prettyprint
     , walk
+    , Node(..)
+    , _nodepos
+    , _root
     )
     where
 
@@ -10,6 +13,8 @@ import Data.Maybe
 import Data.Word
 import Data.List
 import qualified Data.ByteString as B
+
+import Control.Exception (assert)
 
 class GenSeq as where
     type Base as :: *
@@ -34,15 +39,15 @@ instance GenSeq (B.ByteString) where
 
 data STree s = STree
             { raw_seq :: s
-            , root :: Node
+            , _root :: Node
             } deriving (Eq, Show)
 
 data Node = Leaf !Int
             | Inner
-                { pos :: !Int
-                , sdepth :: !Int
-                , children :: [Node]
-                , slink :: Node
+                { _pos :: !Int
+                , _sdepth :: !Int
+                , _children :: [Node]
+                , _slink :: Node
                 }
             deriving (Eq)
 
@@ -52,17 +57,17 @@ instance Show Node where
 
 
 selectChild :: (GenSeq a, Eq (Base a)) => a -> Node -> Base a -> Maybe Node
-selectChild rseq n v = selectChild' (children n)
+selectChild rseq n v = selectChild' (_children n)
     where
-        sd = sdepth n
+        sd = _sdepth n
         selectChild' [] = Nothing
         selectChild' (c:cs)
-            | (rseq `seqindex` (nodepos c + sd)) == v = Just c
+            | (rseq `seqindex` (_nodepos c + sd)) == v = Just c
             | otherwise = selectChild' cs
 
-nodepos :: Node -> Int
-nodepos (Leaf p) = p
-nodepos Inner{pos=p} = p
+_nodepos :: Node -> Int
+_nodepos (Leaf p) = p
+_nodepos Inner{_pos=p} = p
 
 data STIterator a = STIterator
                     { tree :: STree a
@@ -81,32 +86,30 @@ down sti@STIterator{tree=st, node=(Leaf p), itdepth=itd} c
 
 
 down sti@STIterator{tree=st, node=n, itdepth=itd} c
-    | itd == (sdepth n) = case selectChild (raw_seq st) n c of
+    | itd == (_sdepth n) = case selectChild (raw_seq st) n c of
                     Nothing -> Nothing
                     Just next -> Just sti{node=next, itdepth=(itd+1), parent=n}
-    | c == (raw_seq st `seqindex` ((pos n)+itd)) = Just sti{itdepth=(itd+1)}
+    | c == (raw_seq st `seqindex` ((_pos n)+itd)) = Just sti{itdepth=(itd+1)}
     | otherwise = Nothing
 
 
 followSlink :: (GenSeq a, Eq (Base a)) => STIterator a -> STIterator a
-followSlink sti@STIterator{tree=st, node=(Leaf _), parent=n, itdepth=itd}
-        = fromJust $ downmany s sti{node=next, parent=undefined, itdepth=start}
+followSlink sti@STIterator{tree=st, node=nd, parent=par, itdepth=itd}
+    | (_sdepth nd) == 0 = assert (itd == 0) sti { parent=nd }
+    | otherwise = fromJust $ downmany s sti{node=next, parent=undefined, itdepth=(assert (start < itd) start)}
     where
-        next = slink n
-        start = sdepth next
+        orig_pos = _nodepos nd
+        next = _slink par
+        start = _sdepth next
         rseq = raw_seq st
-        s = (pos next) + start
-        e = (pos next) + (itd-1)
+        s = (orig_pos+1) + start
         downmany p i
-            | p == e = Just i
+            | (itdepth i) == (itd-1) = Just i
             | otherwise = (down i (rseq `seqindex` p)) >>= (downmany (p+1))
 
-followSlink sti@STIterator{node=n, itdepth=itd}
-    | (sdepth n) == 0 = sti
-    | otherwise = sti { node=(slink n), parent=undefined, itdepth=(itd-1) }
 
 rootiterator :: STree a -> STIterator a
-rootiterator st = STIterator { tree=st, node=(root st), parent=(root st), itdepth=0 }
+rootiterator st = STIterator { tree=st, node=(_root st), parent=(_root st), itdepth=0 }
 
 walkit :: (GenSeq a, Eq (Base a)) => STIterator a -> [Base a] -> [(Int,Int)]
 walkit sti@STIterator{node=n,itdepth=itd} cc
@@ -116,7 +119,7 @@ walkit sti@STIterator{node=n,itdepth=itd} cc
         Nothing -> (here ++ rest)
     where
         (c:cs) = cc
-        here = if at_root then [] else [(nodepos n, itd)]
+        here = if at_root then [] else [(_nodepos n, itd)]
         at_root = itd == 0
         rest = walkit (followSlink sti) (if at_root then cs else cc)
 
@@ -134,11 +137,11 @@ buildTree rseq = STree rseq r
             where
                 ret = Inner f sd next slinknode
                 slinknode = if sd == 0 then r
-                            else findSlink (slink par)
+                            else findSlink (_slink par)
 
                 findSlink nd
-                    | (sdepth nd) == (sd-1) = nd
-                    | otherwise = findSlink (fromJust $ selectChild rseq nd (rseq `seqindex` (f+(sdepth nd)+1)))
+                    | (_sdepth nd) == (sd-1) = nd
+                    | otherwise = findSlink (fromJust $ selectChild rseq nd (rseq `seqindex` (f+(_sdepth nd)+1)))
 
                 next = [putsuffixes ret (newsd 0 gs) gs | gs <- (
                                         (groupBy (\a b -> (comparefst a b) == EQ)) ((sortBy comparefst) ss)
@@ -153,7 +156,7 @@ buildTree rseq = STree rseq r
                     where at p = (rseq `seqindex` (p+sd))
 
 prettyprint :: (GenSeq a) => STree a -> [a]
-prettyprint st = pretty 0 (root st)
+prettyprint st = pretty 0 (_root st)
     where
         rseq = raw_seq st
         n = seqlen rseq
