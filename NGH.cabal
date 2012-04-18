@@ -18,9 +18,10 @@ Library
                 ,primitive
                 ,vector
     Exposed-modules:
-                Data.NGH.FastQ
+                Data.NGH.Align
+                ,Data.NGH.FastQ
+                ,Data.NGH.SuffixTree
                 ,Data.NGH.Trim
-                ,Data.NGH.Align
     GHC-Options: -Wall -fwarn-tabs
 
 

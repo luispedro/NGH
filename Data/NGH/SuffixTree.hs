@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeFamilies, FlexibleContexts, BangPatterns #-}
 module Data.NGH.SuffixTree
-    (
+    ( buildTree
+    , walk
     )
     where
 
@@ -105,12 +106,22 @@ followSlink sti@STIterator{node=n, itdepth=itd}
 rootiterator :: STree a -> STIterator a
 rootiterator st = STIterator { tree=st, node=(root st), parent=(root st), itdepth=0 }
 
-walk :: (GenSeq a, Eq (Base a)) => STIterator a -> [Base a] -> [Int]
-walk STIterator{node=n} [] = [nodepos n]
-walk sti@STIterator{node=n} cc@(c:cs) = case down sti c of
-        Just next -> walk next cs
-        Nothing -> ((nodepos n):(walk (followSlink sti) (if nodepos n == 0 then cs else cc)))
+walkit :: (GenSeq a, Eq (Base a)) => STIterator a -> [Base a] -> [(Int,Int)]
+walkit sti@STIterator{node=n,itdepth=itd} cc
+    | null cc = here
+    | otherwise  = case down sti c of
+        Just next -> walkit next cs
+        Nothing -> (here ++ rest)
+    where
+        (c:cs) = cc
+        here = if at_root then [] else [(nodepos n, itd)]
+        at_root = itd == 0
+        rest = walkit (followSlink sti) (if at_root then cs else cc)
 
+walk :: (GenSeq a, Eq (Base a)) => STree a -> [Base a] -> [(Int,Int)]
+walk = walkit . rootiterator
+
+buildTree :: (Ord (Base a), GenSeq a, Eq (Base a)) => a -> STree a
 buildTree seq = STree seq root
     where
         n = seqlen seq
