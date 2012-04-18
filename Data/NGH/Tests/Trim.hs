@@ -15,15 +15,23 @@ tests = $(testGroupGenerator)
 case_full19 = trimmed @?= expected
     where
         trimmed = trim_adapter
-            (BC.pack                   "ABBBBBA") 
+            (BC.pack                   "ABBBBBA")
             (BC.pack "AAAAAAAAAAAAAAAAAAABBBBBA") 1 1
+        expected =
+            (BC.pack "AAAAAAAAAAAAAAAAAA")
+
+case_full19exact = trimmed @?= expected
+    where
+        trimmed = trim_exact_adapter
+            (BC.pack                   "ABBBBBA") 2
+            (BC.pack "AAAAAAAAAAAAAAAAAAABBBBBA")
         expected =
             (BC.pack "AAAAAAAAAAAAAAAAAA")
 
 case_19 = trimmed @?= expected
     where
         trimmed = trim_adapter
-            (BC.pack                   "ABBBB") 
+            (BC.pack                   "ABBBB")
             (BC.pack "AAAAAAAAAAAAAAAAAAABBBBBA") 0 1
         expected =
             (BC.pack "AAAAAAAAAAAAAAAAAA")
@@ -31,7 +39,7 @@ case_19 = trimmed @?= expected
 case_mm2 = trimmed @?= expected
     where
         trimmed = trim_adapter
-            (BC.pack                   "ABBBBBA") 
+            (BC.pack                   "ABBBBBA")
             (BC.pack "AAAAAAAAAAAAAAAAAAABCBBBA") 2 3
         expected =
             (BC.pack "AAAAAAAAAAAAAAAAAA")

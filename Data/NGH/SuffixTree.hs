@@ -111,20 +111,22 @@ followSlink sti@STIterator{tree=st, node=nd, parent=par, itdepth=itd}
 rootiterator :: STree a -> STIterator a
 rootiterator st = STIterator { tree=st, node=(_root st), parent=(_root st), itdepth=0 }
 
-walkit :: (GenSeq a, Eq (Base a)) => STIterator a -> [Base a] -> [(Int,Int)]
-walkit sti@STIterator{node=n,itdepth=itd} cc
+walkit :: (GenSeq a, Eq (Base a)) => Int -> STIterator a -> [Base a] -> [(Int,Int,Int)]
+walkit !qi sti@STIterator{node=n,itdepth=itd} cc
     | null cc = here
     | otherwise  = case down sti c of
-        Just next -> walkit next cs
+        Just next -> walkit (qi+1) next cs
         Nothing -> (here ++ rest)
     where
         (c:cs) = cc
-        here = if at_root then [] else [(_nodepos n, itd)]
+        here = if at_root then [] else [(qi,_nodepos n, itd)]
         at_root = itd == 0
-        rest = walkit (followSlink sti) (if at_root then cs else cc)
+        rest = if at_root
+                then walkit (qi+1) (followSlink sti) cs
+                else walkit qi     (followSlink sti) cc
 
-walk :: (GenSeq a, Eq (Base a)) => STree a -> [Base a] -> [(Int,Int)]
-walk = walkit . rootiterator
+walk :: (GenSeq a, Eq (Base a)) => STree a -> [Base a] -> [(Int,Int,Int)]
+walk = walkit 0 . rootiterator
 
 buildTree :: (Ord (Base a), GenSeq a, Eq (Base a)) => a -> STree a
 buildTree rseq = STree rseq r

@@ -18,7 +18,7 @@ case_perfect = (length (walk t s)) @?= 1
 case_none = (length (walk t s')) @?= 0
     where s' = "MISSISSIPPI"
 
-case_some = (walk t s') @?= [(1,2),(2,1)]
+case_some = (walk t s') @?= [(2,1,2),(2,2,1)]
     where s' = "isa"
 
 case_some2 = (length (walk t s')) @?= 1
@@ -28,7 +28,7 @@ case_slink = (is_root `all` (map smart_slink first_level)) @? "Depth 1 nodes do 
     where
         first_level = _children (_root t)
         is_root = (==0) . _nodepos
-        smart_slink (Leaf p) = _root t
+        smart_slink (Leaf _) = _root t
         smart_slink n = _slink n
 
 case_nr_leaves = (length leaves) @?= ((length s) + 1)

@@ -2,6 +2,7 @@ module Data.NGH.Trim
     ( trim
     , trimpoints
     , trim_adapter
+    , trim_exact_adapter
     , bSlice
     ) where
 import qualified Data.Vector as V
@@ -10,6 +11,7 @@ import Data.List
 import Data.Word
 
 import Data.NGH.FastQ
+import Data.NGH.SuffixTree
 
 -- move this up the namespace ladder
 (!) :: V.Vector a -> Int -> a
@@ -46,16 +48,28 @@ trim sqq@DNAwQuality {dna_seq=sq,qualities=qs} qualthresh = sqq{dna_seq=bSlice s
     where
         (st,e) = trimpoints qs qualthresh
 
+trim_exact_adapter :: B.ByteString -> Int -> B.ByteString -> B.ByteString
+trim_exact_adapter adapter minhit = perform
+    where
+        t = buildTree (adapter `B.snoc` 0)
+        perform :: B.ByteString -> B.ByteString
+        perform s = removehit minhit (qi-len) len s
+            where (qi, _, len) = maximumBy (\(_,_, d) (_,_, d') -> d `compare` d') $ walk t (B.unpack s)
+
+removehit :: Int -> Int -> Int -> B.ByteString -> B.ByteString
+removehit minhit start len sq = if len < minhit then sq else bSlice s e sq
+    where
+        len_keep_start = start
+        len_keep_end = (B.length sq) - start - len
+        (s,e) = if len_keep_start > len_keep_end
+                        then (0,start)
+                        else (start+len, B.length sq)
+
 trim_adapter :: B.ByteString -> B.ByteString -> Int -> Int -> B.ByteString
-trim_adapter ad sq mm minhit = if longest < minhit then sq else bSlice start end sq
+trim_adapter ad sq mm minhit = removehit minhit best_si longest sq
     where
         ns = B.length sq
         na = B.length ad
-        e_5 = best_si
-        s_3 = best_si + longest
-        len_5 = e_5
-        len_3 = ns - s_3
-        (start,end) = if len_5 > len_3 then (0,e_5) else (s_3, B.length sq)
         (longest, best_si) = maximumBy (\a b -> compare (fst a) (fst b)) matches
         matches :: [(Int,Int)]
         matches = [(matchat si ai 0 0,si) | si <- [0..(ns-1)], ai <- [0..(na-1)]]
