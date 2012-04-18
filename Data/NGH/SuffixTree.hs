@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeFamilies, FlexibleContexts, BangPatterns #-}
 module Data.NGH.SuffixTree
     ( buildTree
+    , prettyprint
     , walk
     )
     where
@@ -51,14 +52,15 @@ instance Show Node where
 
 
 selectChild :: (GenSeq a, Eq (Base a)) => a -> Node -> Base a -> Maybe Node
-selectChild seq n v = selectChild' (children n)
+selectChild rseq n v = selectChild' (children n)
     where
         sd = sdepth n
         selectChild' [] = Nothing
         selectChild' (c:cs)
-            | (seq `seqindex` (nodepos c + sd)) == v = Just c
+            | (rseq `seqindex` (nodepos c + sd)) == v = Just c
             | otherwise = selectChild' cs
 
+nodepos :: Node -> Int
 nodepos (Leaf p) = p
 nodepos Inner{pos=p} = p
 
@@ -87,7 +89,7 @@ down sti@STIterator{tree=st, node=n, itdepth=itd} c
 
 
 followSlink :: (GenSeq a, Eq (Base a)) => STIterator a -> STIterator a
-followSlink sti@STIterator{tree=st, node=(Leaf p), parent=n, itdepth=itd}
+followSlink sti@STIterator{tree=st, node=(Leaf _), parent=n, itdepth=itd}
         = fromJust $ downmany s sti{node=next, parent=undefined, itdepth=start}
     where
         next = slink n
@@ -95,9 +97,9 @@ followSlink sti@STIterator{tree=st, node=(Leaf p), parent=n, itdepth=itd}
         rseq = raw_seq st
         s = (pos next) + start
         e = (pos next) + (itd-1)
-        downmany p sti
-            | p == e = Just sti
-            | otherwise = (down sti (rseq `seqindex` p)) >>= (downmany (p+1))
+        downmany p i
+            | p == e = Just i
+            | otherwise = (down i (rseq `seqindex` p)) >>= (downmany (p+1))
 
 followSlink sti@STIterator{node=n, itdepth=itd}
     | (sdepth n) == 0 = sti
@@ -122,39 +124,39 @@ walk :: (GenSeq a, Eq (Base a)) => STree a -> [Base a] -> [(Int,Int)]
 walk = walkit . rootiterator
 
 buildTree :: (Ord (Base a), GenSeq a, Eq (Base a)) => a -> STree a
-buildTree seq = STree seq root
+buildTree rseq = STree rseq r
     where
-        n = seqlen seq
-        root = putsuffixes root 0 [0..(n-1)]
+        n = seqlen rseq
+        r = putsuffixes r 0 [0..(n-1)]
         putsuffixes _ _ [] = error "putsuffixes []"
         putsuffixes _ _ [s] = Leaf s
-        putsuffixes parent sd ss@(f:_) =  ret
+        putsuffixes par sd ss@(f:_) =  ret
             where
                 ret = Inner f sd next slinknode
-                slinknode = findSlink (slink parent) f sd
+                slinknode = if sd == 0 then r
+                            else findSlink (slink par)
 
-                findSlink _ _ sd | sd == 0 = root
-                findSlink nd@(Inner nP nSd nCh _) f sd
-                    | nSd == (sd-1) = nd
-                    | otherwise = findSlink (fromJust $ selectChild seq nd (seq `seqindex` (f+nSd+1))) f sd
-                findSlink _ _ _ = error "Should not have happened"
+                findSlink nd
+                    | (sdepth nd) == (sd-1) = nd
+                    | otherwise = findSlink (fromJust $ selectChild rseq nd (rseq `seqindex` (f+(sdepth nd)+1)))
 
                 next = [putsuffixes ret (newsd 0 gs) gs | gs <- (
                                         (groupBy (\a b -> (comparefst a b) == EQ)) ((sortBy comparefst) ss)
                                         )]
-                newsd i group = if allEq [seq `seqindex` (sd+i+g)|g<-group] then
-                            newsd (i+1) group
+                newsd i gs = if allEq [rseq `seqindex` (sd+i+g)|g<-gs] then
+                            newsd (i+1) gs
                         else (sd+i)
                 allEq [] = True
                 allEq (x:xs) = all (==x) xs
                 comparefst :: Int -> Int -> Ordering
                 comparefst p0 p1 = (at p0) `compare` (at p1)
-                    where at p = (seq `seqindex` (p+sd))
+                    where at p = (rseq `seqindex` (p+sd))
 
+prettyprint :: (GenSeq a) => STree a -> [a]
 prettyprint st = pretty 0 (root st)
     where
-        seq = raw_seq st
-        n = seqlen seq
-        pretty d (Leaf p) = [seqslice (p+d) n seq]
-        pretty d (Inner p sd cs _) = ((seqslice p (p+sd) seq):concat [pretty sd c | c <- cs])
+        rseq = raw_seq st
+        n = seqlen rseq
+        pretty d (Leaf p) = [seqslice (p+d) n rseq]
+        pretty _ (Inner p sd cs _) = ((seqslice p (p+sd) rseq):concat [pretty sd c | c <- cs])
 
