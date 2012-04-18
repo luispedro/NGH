@@ -61,66 +61,55 @@ selectChild seq n v = selectChild' (children n)
 nodepos (Leaf p) = p
 nodepos Inner{pos=p} = p
 
-data STIterator = AtLeaf
-                    { leafPos :: !Int
-                    , alongLeaf :: !Int
-                    , parentNode :: Node
-                    }
-                | AtInner
-                    { atNode :: Node
-                    , alongNode :: !Int
-                    }
-    deriving (Eq, Show)
+data STIterator a = STIterator
+                    { tree :: STree a
+                    , node :: Node
+                    , parent :: Node
+                    , itdepth :: !Int
+                    } deriving (Eq, Show)
 
-down :: (GenSeq a, Eq (Base a)) => STree a -> STIterator -> Base a -> Maybe STIterator
-down st at@AtLeaf{leafPos=lp,alongLeaf=al} c
-    | (c `asTypeOf` c') == c' = Just at{alongLeaf=(al+1)}
+down :: (GenSeq a, Eq (Base a)) => STIterator a -> Base a -> Maybe (STIterator a)
+down sti@STIterator{tree=st, node=(Leaf p), itdepth=itd} c
+    | c == c' = Just sti{ itdepth=(itd+1) }
     | otherwise = Nothing
     where
-        c' =  (rseq `seqindex` ap)
+        c' =  (rseq `seqindex` (itd+p))
         rseq = raw_seq st
-        ap :: Int
-        ap = lp + al
 
 
-down st ai@AtInner{atNode=n, alongNode=np} c
-    | np == (sdepth n) = case selectChild (raw_seq st) n c of
+down sti@STIterator{tree=st, node=n, itdepth=itd} c
+    | itd == (sdepth n) = case selectChild (raw_seq st) n c of
                     Nothing -> Nothing
-                    Just l@(Leaf lp) -> Just (AtLeaf lp (np+1) n)
-                    Just next -> Just (AtInner next (np+1))
-    | c == (raw_seq st `seqindex` ((pos n)+np)) = Just ai {alongNode=(np+1)}
+                    Just next -> Just sti{node=next, itdepth=(itd+1), parent=n}
+    | c == (raw_seq st `seqindex` ((pos n)+itd)) = Just sti{itdepth=(itd+1)}
     | otherwise = Nothing
 
-downmany :: (GenSeq a, Eq (Base a)) => STree a -> STIterator -> [Base a] -> Maybe STIterator
-downmany st it [] = Just it
-downmany st it (c:cs) = (down st it c) >>= (\it' -> downmany st it' cs)
 
-followSlink :: (GenSeq a, Eq (Base a)) => STree a -> STIterator -> STIterator
-followSlink st at@AtLeaf{alongLeaf=lp, parentNode=n}
-        = fromJust $ downmany st (AtInner next start) (seqToList cs)
+followSlink :: (GenSeq a, Eq (Base a)) => STIterator a -> STIterator a
+followSlink sti@STIterator{tree=st, node=(Leaf p), parent=n, itdepth=itd}
+        = fromJust $ downmany s sti{node=next, parent=undefined, itdepth=start}
     where
         next = slink n
         start = sdepth next
-        cs = seqslice s e (raw_seq st)
+        rseq = raw_seq st
         s = (pos next) + start
-        e = (pos next) + (lp-1)
+        e = (pos next) + (itd-1)
+        downmany p sti
+            | p == e = Just sti
+            | otherwise = (down sti (rseq `seqindex` p)) >>= (downmany (p+1))
 
-followSlink st ai@AtInner{alongNode=an, atNode=n}
-    | (sdepth n) == 0 = ai
-    | otherwise = AtInner { atNode=(slink n), alongNode=(an-1)}
+followSlink sti@STIterator{node=n, itdepth=itd}
+    | (sdepth n) == 0 = sti
+    | otherwise = sti { node=(slink n), parent=undefined, itdepth=(itd-1) }
 
-rootiterator :: STree a -> STIterator
-rootiterator st = AtInner (root st) 0
+rootiterator :: STree a -> STIterator a
+rootiterator st = STIterator { tree=st, node=(root st), parent=(root st), itdepth=0 }
 
-walk :: (GenSeq a, Eq (Base a)) => STree a -> STIterator -> [Base a] -> [Int]
-walk st !sti [] = []
-walk st sti cc@(c:cs) = case down st sti c of
-        Just n -> if null cs then [posof n]
-                    else walk st n cs
-        Nothing -> ((posof sti):(walk st (followSlink st sti) (if posof sti == 0 then cs else cc)))
-
-posof at@AtLeaf { leafPos=p } = p
-posof ai@AtInner { atNode=n } = pos n
+walk :: (GenSeq a, Eq (Base a)) => STIterator a -> [Base a] -> [Int]
+walk STIterator{node=n} [] = [nodepos n]
+walk sti@STIterator{node=n} cc@(c:cs) = case down sti c of
+        Just next -> walk next cs
+        Nothing -> ((nodepos n):(walk (followSlink sti) (if nodepos n == 0 then cs else cc)))
 
 buildTree seq = STree seq root
     where
