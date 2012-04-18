@@ -10,13 +10,13 @@ import Data.NGH.SuffixTree
 
 tests = $(testGroupGenerator)
 
+s = "mississippi"
+t = buildTree (s ++ ['$'])
+
 case_perfect = (length (walk t s)) @?= 1
-    where
-        s = "mississippi"
-        t = buildTree (s ++ ['$'])
 
 case_none = (length (walk t s')) @?= 0
-    where
-        s' = "MISSISSIPPI"
-        s = "mississippi"
-        t = buildTree (s ++ ['$'])
+    where s' = "MISSISSIPPI"
+
+case_some = (length (walk t s')) @?= 0
+    where s' = "misasaasassas"
