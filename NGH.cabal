@@ -21,8 +21,9 @@ Library
                 Data.NGH.Align
                 ,Data.NGH.FastQ
                 ,Data.NGH.SuffixTree
+                ,Data.NGH.SuffixTrie
                 ,Data.NGH.Trim
-    GHC-Options: -Wall -fwarn-tabs
+    GHC-Options: -Wall -fwarn-tabs -O2
 
 
 Test-Suite test-NGH
