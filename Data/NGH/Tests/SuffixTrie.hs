@@ -55,9 +55,9 @@ case_find_g = length (walk tdna (BC.pack "g")) @?= 1
 case_dna4 = (length . _children . _root) tdna @?= 4
 
 
-prop_finds_match q = null q || (max_match q) > 0
+prop_finds_match q = null q || max_match > 0
     where
         q' = BC.pack [c | (Dna c) <- q]
-        max_match q = maximum [depth | (_,_,depth) <- walk tdna q']
+        max_match = maximum [depth | (_,_,depth) <- walk tdna q']
 
 case_ttc  = length (walk tdna (BC.pack "ttc")) > 0 @? "Regression (found with quick check)"

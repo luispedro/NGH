@@ -3,6 +3,7 @@ module Data.NGH.SuffixTrie
     ( buildTrie
     , Node(..)
     , walk
+    , _prettyprint
     , _root
     ) where
 
@@ -11,11 +12,7 @@ import Data.Maybe
 import Data.Word
 import Data.List
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Char8 as BC
 import Data.Convertible
-import Control.Monad
-
-import Debug.Trace
 
 data Node = Node
             { _pos :: !Int
@@ -32,21 +29,17 @@ instance Show Node where
                 "}"]
 
 newtype Trie = Trie Node deriving (Show)
+_root :: Trie -> Node
 _root (Trie n) = n
 
-down :: Node -> Word8 -> Maybe Node
-down Node{_children = cs } v = down' cs v
-    where
-        down' [] v = Nothing
-        down' ((c,n):cs) v
-            | v == c = Just n
-            | otherwise = down' cs v
+down :: Word8 -> Node -> Maybe Node
+down v = (lookup v) . _children
 
 buildTrie :: B.ByteString -> Trie
 buildTrie s = Trie root
     where
-        n = B.length s
-        root = Node { _pos=0, _sdepth=0, _children=(children 0 [] [0..(n-1)]), _slink=root }
+        len = B.length s
+        root = Node { _pos=0, _sdepth=0, _children=(children 0 [] [0..(len-1)]), _slink=root }
         children :: Int -> [Word8] -> [Int] -> [(Word8, Node)]
         children _ _ [] = []
         children sd path ss = [(first, Node
@@ -58,11 +51,11 @@ buildTrie s = Trie root
                                                     $ groupBy (\a b -> (fst a) == (fst b))
                                                     $ sortBy (\a b -> (fst a) `compare` (fst b))
                                                     $ map (\p -> (s `B.index` (p+sd), p))
-                                                    $ filter (\p -> (p+sd) < n)
+                                                    $ filter (\p -> (p+sd) < len)
                                                     ss]
         findSlink ps = fromJust $ downmany (tail ps) root
         downmany [] n = Just n
-        downmany (p:ps) n = (down n p) >>= (downmany ps)
+        downmany (p:ps) n = (down p n) >>= (downmany ps)
 
 
 walk :: Trie -> B.ByteString -> [(Int,Int,Int)]
@@ -70,7 +63,7 @@ walk (Trie root) b = walk' root 0
     where
         walk' n@(Node p sd _ slink) bi
             | bi == (B.length b) = here
-            |otherwise = case down n (b `B.index` bi) of
+            |otherwise = case down (b `B.index` bi) n of
                     Just next -> walk' next (bi+1)
                     Nothing -> if at_root
                                     then walk' n (bi+1)
@@ -81,8 +74,8 @@ walk (Trie root) b = walk' root 0
                             else [(bi,p,sd)]
                 at_root = sd == 0
 
-prettyprint :: Trie -> [String]
-prettyprint (Trie n) = pp' 0 (_children n)
+_prettyprint :: Trie -> [String]
+_prettyprint (Trie root) = pp' 0 (_children root)
     where
         pp' :: Int -> [(Word8, Node)] -> [String]
         pp' _ [] = []
