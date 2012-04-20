@@ -2,13 +2,13 @@
 
 module Data.NGH.Trim
     ( trim
-    , trimpoints
     , trim_adapter
     , trim_exact_adapter
     , bSlice
     ) where
 import qualified Data.ByteString as B
 import Data.List
+import Data.Maybe
 import Data.Word
 
 import Data.NGH.FastQ
@@ -20,13 +20,7 @@ bSlice start end = (B.take (end-start)) . (B.drop start)
 
 
 trimstart :: B.ByteString -> Word8 -> Int
-trimstart qs qualthresh = trimstart' (min (n-1) 4)
-    where
-        n = B.length qs
-        trimstart' 0 = 0
-        trimstart' !p
-            | (qs `B.index` p) >= qualthresh = trimstart' (p-1)
-            | otherwise = (p+1)
+trimstart qs qualthresh = fromMaybe 0 $ B.findIndex (>= qualthresh) qs
 
 trimend :: B.ByteString -> Word8 -> Int
 trimend qs qualthresh = trimend' (n-1)
@@ -37,13 +31,12 @@ trimend qs qualthresh = trimend' (n-1)
             | (qs `B.index` p) >= qualthresh = (p+1)
             | otherwise = trimend' (p-1)
 
-trimpoints :: B.ByteString -> Word8 -> (Int,Int)
-trimpoints qs qualthresh = (trimstart qs qualthresh, trimend qs qualthresh)
 
 trim :: DNAwQuality -> Word8 -> DNAwQuality
 trim sqq@DNAwQuality {dna_seq=sq,qualities=qs} qualthresh = sqq{dna_seq=bSlice st e sq, qualities=bSlice st e qs}
     where
-        (st,e) = trimpoints qs qualthresh
+        st = trimstart qs qualthresh
+        e  = trimend qs qualthresh
 
 trim_exact_adapter :: B.ByteString -> Int -> B.ByteString -> B.ByteString
 trim_exact_adapter adapter minhit = perform
