@@ -16,7 +16,7 @@ import Data.NGH.SuffixTrie
 
 -- | this should be a part of the ByteString package, but it isn't.
 bSlice :: Int -> Int -> B.ByteString -> B.ByteString
-bSlice start end = (B.take (end-start)) . (B.drop start)
+bSlice start end = (B.drop start) . (B.take end)
 
 
 trimstart :: B.ByteString -> Word8 -> Int
