@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Data.NGH.Trim
     ( trim
     , trimpoints
@@ -5,7 +7,6 @@ module Data.NGH.Trim
     , trim_exact_adapter
     , bSlice
     ) where
-import qualified Data.Vector as V
 import qualified Data.ByteString as B
 import Data.List
 import Data.Word
@@ -13,38 +14,34 @@ import Data.Word
 import Data.NGH.FastQ
 import Data.NGH.SuffixTrie
 
--- move this up the namespace ladder
-(!) :: V.Vector a -> Int -> a
-(!) = (V.!)
-
 -- | this should be a part of the ByteString package, but it isn't.
 bSlice :: Int -> Int -> B.ByteString -> B.ByteString
 bSlice start end = (B.take (end-start)) . (B.drop start)
 
 
-trimstart :: V.Vector Word8 -> Word8 -> Int
+trimstart :: B.ByteString -> Word8 -> Int
 trimstart qs qualthresh = trimstart' (min (n-1) 4)
     where
-        n = V.length qs
+        n = B.length qs
         trimstart' 0 = 0
-        trimstart' p
-            | (qs ! p) >= qualthresh = trimstart' (p-1)
+        trimstart' !p
+            | (qs `B.index` p) >= qualthresh = trimstart' (p-1)
             | otherwise = (p+1)
 
-trimend :: V.Vector Word8 -> Word8 -> Int
+trimend :: B.ByteString -> Word8 -> Int
 trimend qs qualthresh = trimend' (n-1)
     where
-        n = V.length qs
+        n = B.length qs
         trimend' 0 = 0
-        trimend' p
-            | (qs ! p) >= qualthresh = (p+1)
+        trimend' !p
+            | (qs `B.index` p) >= qualthresh = (p+1)
             | otherwise = trimend' (p-1)
 
-trimpoints :: V.Vector Word8 -> Word8 -> (Int,Int)
+trimpoints :: B.ByteString -> Word8 -> (Int,Int)
 trimpoints qs qualthresh = (trimstart qs qualthresh, trimend qs qualthresh)
 
 trim :: DNAwQuality -> Word8 -> DNAwQuality
-trim sqq@DNAwQuality {dna_seq=sq,qualities=qs} qualthresh = sqq{dna_seq=bSlice st e sq, qualities=V.slice st e qs}
+trim sqq@DNAwQuality {dna_seq=sq,qualities=qs} qualthresh = sqq{dna_seq=bSlice st e sq, qualities=bSlice st e qs}
     where
         (st,e) = trimpoints qs qualthresh
 
