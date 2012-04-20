@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Data.NGH.FastQ
     ( fastQConduit
     , DNAwQuality(..)
@@ -19,20 +17,17 @@ data DNAwQuality = DNAwQuality
             } deriving (Eq,Show)
 
 
-newtype FQBuffer = FQBuffer [B.ByteString]
-
 fastQConduit :: (Monad m) => Conduit B.ByteString m DNAwQuality
-fastQConduit = conduitState empty push close
+fastQConduit = start
     where
-        push (FQBuffer buf) line = return (if length buf == 3
-                            then StateProducing empty [one]
-                            else StateProducing (FQBuffer (line:buf)) []
-            ) where
-                one = DNAwQuality { dna_seq=sq, header=h, qualities=q line }
-                [_plus,sq,h] = buf
-                q = V.fromList . (map qualN) . B.unpack
-        close _ = return []
-        empty = FQBuffer []
+        start = NeedInput push0 close
+        push0 h = NeedInput (push1 h) close
+        push1 h sq = NeedInput (push2 h sq) close
+        push2 h sq _ = NeedInput (push3 h sq) close
+        push3 h sq qs = HaveOutput start (return ())
+                            DNAwQuality { dna_seq=sq, header=h, qualities=q qs }
+        close = Done Nothing ()
+        q = V.fromList . (map qualN) . B.unpack
 
 ord8 :: Char -> Word8
 ord8 = convert . ord
