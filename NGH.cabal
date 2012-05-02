@@ -29,6 +29,7 @@ Library
                 ,Data.NGH.SuffixTree
                 ,Data.NGH.SuffixTrie
                 ,Data.NGH.Trim
+                ,Data.NGH.Formats.Embl
     GHC-Options: -Wall -fwarn-tabs -O2
 
 
