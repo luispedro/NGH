@@ -30,6 +30,7 @@ Library
                 ,Data.NGH.SuffixTrie
                 ,Data.NGH.Trim
                 ,Data.NGH.Formats.Embl
+                ,Data.NGH.Formats.Fasta
     GHC-Options: -Wall -fwarn-tabs -O2
 
 
