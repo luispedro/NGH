@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Data.NGH.Formats.Embl
     ( readSeq
     ) where
@@ -13,11 +14,9 @@ readSeq = readSeq' . L8.lines
 
 readSeq' [] = Nothing
 readSeq' (s:ss)
-    | bsSQ `L.isPrefixOf` s = (Just . L.fromChunks . map getSeq) ss
+    | "SQ" `L.isPrefixOf` s = (Just . L.fromChunks . map getSeq) ss
     | otherwise = readSeq' ss
 
 getSeq = S.filter isACTG . S.concat . L.toChunks
+isACTG = isJust . (`L.elemIndex` "actgACTG")
 
-bsSQ = L8.pack "SQ"
-bsACTG = L8.pack "actgACTG"
-isACTG = isJust . (`L.elemIndex` bsACTG)
