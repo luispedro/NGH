@@ -21,5 +21,5 @@ data SamLine = SamLine
             } deriving (Eq, Show)
 
 isAligned :: SamLine -> Bool
-isAligned = not . (`testBit` 0x4) . samFlag
+isAligned = not . (`testBit` 2) . samFlag
 
