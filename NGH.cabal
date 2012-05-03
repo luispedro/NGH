@@ -25,12 +25,14 @@ Library
                 ,vector
     Exposed-modules:
                 Data.NGH.Align
+                ,Data.NGH.Alignments
                 ,Data.NGH.FastQ
                 ,Data.NGH.SuffixTree
                 ,Data.NGH.SuffixTrie
                 ,Data.NGH.Trim
                 ,Data.NGH.Formats.Embl
                 ,Data.NGH.Formats.Fasta
+                ,Data.NGH.Formats.Sam
     GHC-Options: -Wall -fwarn-tabs -O2
 
 
