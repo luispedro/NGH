@@ -21,6 +21,7 @@ Library
                 ,bytestring
                 ,conduit
                 ,convertible
+                ,deepseq
                 ,primitive
                 ,vector
     Exposed-modules:

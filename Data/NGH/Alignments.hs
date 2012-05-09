@@ -5,6 +5,7 @@ module Data.NGH.Alignments
 
 import qualified Data.ByteString as S
 import Data.Bits (testBit)
+import Control.DeepSeq
 
 data SamLine = SamLine
             { samQName :: S.ByteString
@@ -23,3 +24,5 @@ data SamLine = SamLine
 isAligned :: SamLine -> Bool
 isAligned = not . (`testBit` 2) . samFlag
 
+instance NFData SamLine where
+    rnf (SamLine qn f r p m c rn pn tl s qual) = qn `seq` f `seq` r `seq` p `seq` m `seq` c `seq` rn `seq` pn `seq` tl `seq` s `seq` qual `seq` ()
