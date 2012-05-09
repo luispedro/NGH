@@ -4,6 +4,7 @@ module Data.NGH.Formats.Embl
     ) where
 
 import Data.Maybe (isJust)
+import Data.Word
 
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
@@ -15,12 +16,14 @@ readSeq :: L.ByteString -- ^ The whole file (as a lazy string)
         -> Maybe L.ByteString -- ^ A sequence if found
 readSeq = readSeq' . L8.lines
 
+readSeq' :: [L.ByteString] -> Maybe L.ByteString
 readSeq' [] = Nothing
 readSeq' (s:ss)
     | "SQ" `L.isPrefixOf` s = (Just . L.fromChunks . map getSeq . beforeend) ss
     | otherwise = readSeq' ss
 
 getSeq = S.filter isACTG . S.concat . L.toChunks
+isACTG :: Word8 -> Bool
 isACTG = isJust . (`L.elemIndex` "actgACTG")
 
 beforeend [] = []
