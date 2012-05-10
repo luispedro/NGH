@@ -14,12 +14,14 @@ readAnnotations = readAnnotations' . L8.lines
 
 readAnnotations' :: [L.ByteString] -> [GffLine]
 readAnnotations' [] = []
-readAnnotations' (l:ls)
-    | L8.head l == '#' = readAnnotations' ls
-    | otherwise = (readLine l:readAnnotations' ls)
+readAnnotations' (l:ls) = case L8.head l of
+                '#' -> readAnnotations' ls
+                '>' -> []
+                _ -> (readLine l:readAnnotations' ls)
 
 readLine :: L.ByteString -> GffLine
-readLine line = GffLine
+readLine line = if length tokens == 9
+            then GffLine
                 (strict tk0)
                 (strict tk1)
                 (parsegffType $ strict tk2)
@@ -29,8 +31,10 @@ readLine line = GffLine
                 (strand $ L8.head tk6)
                 (phase tk7)
                 (strict tk8)
+            else error (concat ["unexpected line in GFF: ", show line])
     where
-        [tk0,tk1,tk2,tk3,tk4,tk5,tk6,tk7,tk8] = L8.split '\t' line
+        tokens = L8.split '\t' line
+        [tk0,tk1,tk2,tk3,tk4,tk5,tk6,tk7,tk8] = tokens
         parsegffType "exon" = GffExon
         parsegffType "gene" = GffGene
         parsegffType "CDS" = GffCDS
