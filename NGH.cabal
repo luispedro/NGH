@@ -22,6 +22,7 @@ Library
                 ,conduit
                 ,convertible
                 ,deepseq
+                ,fingertree
                 ,primitive
                 ,vector
     Exposed-modules:
@@ -36,7 +37,7 @@ Library
                 ,Data.NGH.Formats.Fasta
                 ,Data.NGH.Formats.Gff
                 ,Data.NGH.Formats.Sam
-    GHC-Options: -Wall -fwarn-tabs -O2
+    GHC-Options: -Wall -fwarn-tabs -O2 -fno-warn-missing-signatures
 
 
 Test-Suite test-NGH

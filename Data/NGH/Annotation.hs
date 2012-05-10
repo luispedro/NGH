@@ -2,9 +2,12 @@ module Data.NGH.Annotation
     ( GffLine(..)
     , GffType(..)
     , GffStrand(..)
+    , intervals
     ) where
 
 import qualified Data.ByteString as S
+import qualified Data.ByteString.Char8 as S8
+import qualified Data.IntervalMap.FingerTree as IM
 import Control.DeepSeq
 
 data GffType = GffExon
@@ -28,6 +31,11 @@ data GffLine = GffLine
             , gffAttributes :: S.ByteString
             } deriving (Eq,Show)
 
+parseGffAttributes :: S.ByteString -> [(S.ByteString, S.ByteString)]
+parseGffAttributes = map (\(aid,aval) -> (aid,S.tail aval))
+                        . map (S8.break (=='='))
+                        . S8.split ';'
+
 instance NFData GffLine where
     rnf gl = (gffSeqId gl) `seq`
             (gffSource gl) `seq`
@@ -39,3 +47,13 @@ instance NFData GffLine where
             (gffPhase gl) `seq`
             (gffAttributes gl) `seq`
             ()
+
+intervals :: [GffLine] -> IM.IntervalMap Int S.ByteString
+intervals = foldl insertg IM.empty
+    where
+        insertg im g = IM.insert (asInterval g) (gffGeneId g) im
+        asInterval g = IM.Interval (gffStart g) (gffEnd g)
+        gffGeneId g = case lookup (S8.pack "ID") (parseGffAttributes $ gffAttributes g) of
+                        Just val -> val
+                        Nothing -> (S8.pack "unknown")
+
