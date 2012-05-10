@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Data.NGH.Formats.Gff
     ( readAnnotations
+    , genesAsIntervalMap
     ) where
 
 import Data.NGH.Annotation
@@ -8,9 +9,13 @@ import Data.NGH.Annotation
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as L8
+import qualified Data.IntervalMap.FingerTree as IM
 
 readAnnotations :: L.ByteString -> [GffLine]
 readAnnotations = readAnnotations' . L8.lines
+
+genesAsIntervalMap :: L.ByteString -> IM.IntervalMap Int S.ByteString
+genesAsIntervalMap = intervals . filter ((==GffGene) . gffType) . readAnnotations
 
 readAnnotations' :: [L.ByteString] -> [GffLine]
 readAnnotations' [] = []
@@ -52,5 +57,4 @@ readLine line = if length tokens == 9
 
 strict :: L.ByteString -> S.ByteString
 strict = S.concat . L.toChunks
-
 
