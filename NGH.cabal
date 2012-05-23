@@ -33,6 +33,7 @@ Library
                 ,Data.NGH.SuffixTree
                 ,Data.NGH.SuffixTrie
                 ,Data.NGH.Trim
+                ,Data.NGH.QualityControl
                 ,Data.NGH.Formats.Embl
                 ,Data.NGH.Formats.Fasta
                 ,Data.NGH.Formats.Gff
