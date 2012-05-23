@@ -1,6 +1,7 @@
 module Data.NGH.FastQ
     ( fastQConduit
     , fastQparse
+    , fastQread
     , DNAwQuality(..)
     ) where
 
@@ -8,6 +9,9 @@ import Data.Word
 import Data.Char
 import Data.Convertible
 import qualified Data.ByteString as B
+import qualified Data.ByteString as S
+import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Conduit
 
 data DNAwQuality = DNAwQuality
@@ -33,6 +37,9 @@ fastQparse [] = []
 fastQparse (h:sq:_:qs:rest) = (first:fastQparse rest)
     where first = DNAwQuality { dna_seq=sq, header=h, qualities=B.map qualN qs }
 fastQparse _ = error "Data.NGH.FastQ.fastQparse: incomplete record"
+
+fastQread :: L.ByteString -> [DNAwQuality]
+fastQread = fastQparse . map (S.concat . L.toChunks) . L8.lines
 
 ord8 :: Char -> Word8
 ord8 = convert . ord
