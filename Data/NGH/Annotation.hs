@@ -2,12 +2,14 @@ module Data.NGH.Annotation
     ( GffLine(..)
     , GffType(..)
     , GffStrand(..)
+    , gffGeneId
     , intervals
     ) where
 
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.IntervalMap.FingerTree as IM
+import Data.Maybe (fromMaybe)
 import Control.DeepSeq
 
 data GffType = GffExon
@@ -48,12 +50,10 @@ instance NFData GffLine where
             (gffAttributes gl) `seq`
             ()
 
+gffGeneId g = lookup (S8.pack "ID") (parseGffAttributes $ gffAttributes g)
+
 intervals :: [GffLine] -> IM.IntervalMap Int S.ByteString
 intervals = foldl insertg IM.empty
     where
-        insertg im g = IM.insert (asInterval g) (gffGeneId g) im
+        insertg im g = IM.insert (asInterval g) (fromMaybe (S8.pack "unknown") $ gffGeneId g) im
         asInterval g = IM.Interval (gffStart g) (gffEnd g)
-        gffGeneId g = case lookup (S8.pack "ID") (parseGffAttributes $ gffAttributes g) of
-                        Just val -> val
-                        Nothing -> (S8.pack "unknown")
-
