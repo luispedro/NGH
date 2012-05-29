@@ -1,12 +1,14 @@
 {-# LANGUAGE BangPatterns #-}
 module Data.NGH.QualityControl
     ( avgVarQualities
+    , avgVarQualitiesConduit
     , gcByPosition
     , gcCount
     , vAverage
     ) where
 
 import Data.Word
+import Data.Conduit
 import Data.NGH.FastQ
 import Data.List (foldl')
 import qualified Data.ByteString as S
@@ -24,6 +26,23 @@ avgVarQualities (q:qs) = (mu, var)
         acc (!a,!as,!as2) dq = (a+1, VU.zipWith (+) as qV, VU.zipWith (+) as2 $ VU.map (**2) qV)
             where qV = VU.fromList . map fromIntegral . S.unpack . qualities $ dq
         zeros dq = VU.replicate (S.length $ dna_seq dq) (0.0 :: Double)
+
+avgVarQualitiesConduit :: (Monad m) => Sink DNAwQuality m (VU.Vector Double, VU.Vector Double)
+avgVarQualitiesConduit = NeedInput first (Done Nothing (VU.empty, VU.empty))
+    where
+        first sq = go (0.0, zeros, zeros) sq
+            where zeros = VU.replicate (S.length $ dna_seq sq) (0.0 :: Double)
+        go (!n,!s,!s2) sq = NeedInput (go next) (final next)
+            where
+                next = (n+1.0,
+                            VU.zipWith (+) s qV,
+                            VU.zipWith (+) s2 $ VU.map (**2) qV)
+                qV = VU.fromList . map fromIntegral . S.unpack . qualities $ sq
+        final :: (Double,VU.Vector Double, VU.Vector Double) -> Sink DNAwQuality m (VU.Vector Double, VU.Vector Double)
+        final (n,s,s2) = Done Nothing (mu,var)
+            where
+                mu = VU.map (/n) s
+                var = VU.zipWith (\s2i mui -> (s2i/n - mui * mui)) s2 mu
 
 gcByPosition :: DNAwQuality -> VU.Vector Bool
 gcByPosition = VU.map isGC . VU.fromList . S.unpack . dna_seq
