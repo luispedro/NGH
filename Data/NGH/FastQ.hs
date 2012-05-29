@@ -3,11 +3,11 @@ module Data.NGH.FastQ
     , fastQparse
     , fastQread
     , DNAwQuality(..)
+    , phred
+    , illumina
     ) where
 
 import Data.Word
-import Data.Char
-import Data.Convertible
 import qualified Data.ByteString as B
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
@@ -21,8 +21,8 @@ data DNAwQuality = DNAwQuality
             } deriving (Eq,Show)
 
 
-fastQConduit :: (Monad m) => Conduit B.ByteString m DNAwQuality
-fastQConduit = start
+fastQConduit :: (Monad m) => (Word8 -> Word8) -> Conduit B.ByteString m DNAwQuality
+fastQConduit qualN = start
     where
         start = NeedInput push0 close
         push0 h = NeedInput (push1 h) close
@@ -32,18 +32,17 @@ fastQConduit = start
                             DNAwQuality { dna_seq=sq, header=h, qualities=B.map qualN qs }
         close = Done Nothing ()
 
-fastQparse :: [B.ByteString] -> [DNAwQuality]
-fastQparse [] = []
-fastQparse (h:sq:_:qs:rest) = (first:fastQparse rest)
+fastQparse :: (Word8 -> Word8) -> [B.ByteString] -> [DNAwQuality]
+fastQparse _ [] = []
+fastQparse qualN (h:sq:_:qs:rest) = (first:fastQparse qualN rest)
     where first = DNAwQuality { dna_seq=sq, header=h, qualities=B.map qualN qs }
-fastQparse _ = error "Data.NGH.FastQ.fastQparse: incomplete record"
+fastQparse _ _ = error "Data.NGH.FastQ.fastQparse: incomplete record"
 
-fastQread :: L.ByteString -> [DNAwQuality]
-fastQread = fastQparse . map (S.concat . L.toChunks) . L8.lines
+fastQread :: (Word8 -> Word8) -> L.ByteString -> [DNAwQuality]
+fastQread qualN = fastQparse qualN . map (S.concat . L.toChunks) . L8.lines
 
-ord8 :: Char -> Word8
-ord8 = convert . ord
+phred :: Word8 -> Word8
+phred c = c - (fromIntegral (33::Int))
 
-qualN :: Word8 -> Word8
-qualN c | c > ord8 'A' = c - (ord8 'A')
-qualN _ = (-1)
+illumina :: Word8 -> Word8
+illumina c = c - (fromIntegral (64::Int))
