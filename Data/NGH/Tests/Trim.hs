@@ -6,7 +6,9 @@ import Test.Framework.TH
 import Test.HUnit
 import Test.Framework.Providers.HUnit
 
+import Data.NGH.FastQ
 import Data.NGH.Trim
+import qualified Data.ByteString as S
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 
@@ -43,6 +45,15 @@ case_mm2 = trimmed @?= expected
             (BC.pack "AAAAAAAAAAAAAAAAAAABCBBBA") 2 3
         expected =
             (BC.pack "AAAAAAAAAAAAAAAAAA")
+
+case_trimLS = S.length tr @?= 8
+    where
+        tr = qualities $ trimLS testdata 8
+        testdata = DNAwQuality undefined undefined qs
+        qs = S.pack [8,8,8,8,0,8,8,0,8,0,
+                            8,8,8,8,
+                            8,8,8,8,
+                      0,8,8,8,8,8,2,8,8,8,5,8,8,8,8,2,8,8]
 
 case_bSlice = (B.length (bSlice 0 10 (BC.pack "0123456789ABCDEF"))) @?= 10
 case_bSlice9 = (B.length (bSlice 1 10 (BC.pack "0123456789ABCDEF"))) @?= 9

@@ -2,11 +2,13 @@
 
 module Data.NGH.Trim
     ( trim
+    , trimLS
     , trim_adapter
     , trim_exact_adapter
     , bSlice
     ) where
 import qualified Data.ByteString as B
+import qualified Data.ByteString as S
 import Data.List
 import Data.Maybe
 import Data.Word
@@ -18,6 +20,21 @@ import Data.NGH.SuffixTrie
 bSlice :: Int -> Int -> B.ByteString -> B.ByteString
 bSlice start end = (B.drop start) . (B.take end)
 
+
+-- | trim to longest substring
+trimLS :: DNAwQuality -> Word8 -> DNAwQuality
+trimLS sqq@DNAwQuality {dna_seq = sq, qualities = qs} qualthresh = sqq{dna_seq=bSlice st e sq, qualities=bSlice st e qs}
+    where
+        n = S.length qs
+        below = S.findIndices (< qualthresh) qs
+        st = st' + 1
+        (st',e) = case below of
+                [] -> (0,n)
+                [p] -> if p > n - p
+                            then (0,p)
+                            else (p+1,n)
+                ps0@(_:ps1) -> maximumBy (\a b -> (sz a) `compare` (sz b)) $ zip ps0 ps1
+        sz (a,b) = b-a
 
 trimstart :: B.ByteString -> Word8 -> Int
 trimstart qs qualthresh = fromMaybe 0 $ B.findIndex (>= qualthresh) qs
