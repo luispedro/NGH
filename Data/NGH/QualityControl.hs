@@ -3,9 +3,11 @@ module Data.NGH.QualityControl
     ( avgVarQualities
     ) where
 
+import Data.Word
 import Data.NGH.FastQ
 import Data.List (foldl')
 import qualified Data.ByteString as S
+import qualified Data.ByteString.Char8 as S8
 import qualified Data.Vector.Unboxed as VU
 
 -- | avgVarQualities: average & variance of quality scores by position
@@ -19,3 +21,13 @@ avgVarQualities (q:qs) = (mu, var)
         acc (!a,!as,!as2) dq = (a+1, VU.zipWith (+) as qV, VU.zipWith (+) as2 $ VU.map (**2) qV)
             where qV = VU.fromList . map fromIntegral . S.unpack . qualities $ dq
         zeros dq = VU.replicate (S.length $ dna_seq dq) (0.0 :: Double)
+
+gcByPosition :: DNAwQuality -> VU.Vector Bool
+gcByPosition = VU.map isGC . VU.fromList . S.unpack . dna_seq
+
+isGC :: Word8 -> Bool
+isGC = (`S.elem` (S8.pack "gcGC"))
+
+gcCount :: DNAwQuality -> Int
+gcCount = VU.sum . VU.map fromEnum . gcByPosition
+
