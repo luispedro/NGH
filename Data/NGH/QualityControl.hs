@@ -1,6 +1,9 @@
 {-# LANGUAGE BangPatterns #-}
 module Data.NGH.QualityControl
     ( avgVarQualities
+    , gcByPosition
+    , gcCount
+    , vAverage
     ) where
 
 import Data.Word
@@ -30,4 +33,22 @@ isGC = (`S.elem` (S8.pack "gcGC"))
 
 gcCount :: DNAwQuality -> Int
 gcCount = VU.sum . VU.map fromEnum . gcByPosition
+
+vAverage :: [VU.Vector Int] -> VU.Vector Double
+vAverage [] = VU.empty
+vAverage qs0@(q0:_) = final $ go zeros 0.0 qs0
+    where
+        zeros = VU.replicate m 0.0
+        step = 8192.0
+        m = VU.length q0
+        go !partial !n [] = [(n,partial)]
+        go !partial !n (q:qs)
+            | n == step = ((step,partial):go zeros 0 (q:qs))
+            | otherwise = go (vSum partial q) (n+1) qs
+        final :: [(Double, VU.Vector Double)] -> VU.Vector Double
+        final is = VU.map (/n) total
+            where
+                (n,total) = foldl' k (0.0,zeros) is
+                k (!p,!v) (p',v') = (p+p', VU.zipWith (+) v v')
+        vSum a b = VU.zipWith (+) a (VU.map fromIntegral b)
 
