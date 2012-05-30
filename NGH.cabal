@@ -36,6 +36,7 @@ Library
                 ,Data.NGH.QualityControl
                 ,Data.NGH.Formats.Embl
                 ,Data.NGH.Formats.Fasta
+                ,Data.NGH.Formats.FastQ
                 ,Data.NGH.Formats.Gff
                 ,Data.NGH.Formats.Sam
     GHC-Options: -Wall -fwarn-tabs -O2 -fno-warn-missing-signatures
@@ -53,5 +54,7 @@ Test-Suite test-NGH
                 ,test-framework-th
     Other-Modules:
         Data.NGH.Tests.Align
+        ,Data.NGH.Formats.Tests.Fasta
+        ,Data.NGH.Formats.Tests.FastQ
     GHC-Options: -Wall -fwarn-tabs -fno-warn-missing-signatures
 

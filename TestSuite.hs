@@ -9,6 +9,7 @@ import Data.NGH.Tests.SuffixTrie
 import Data.NGH.Tests.Trim
 import Data.NGH.Formats.Tests.Embl
 import Data.NGH.Formats.Tests.Fasta
+import Data.NGH.Formats.Tests.FastQ
 import Data.NGH.Formats.Tests.Gff
 import Data.NGH.Formats.Tests.Sam
 
@@ -21,6 +22,7 @@ main = defaultMain
     ,Data.NGH.Tests.Trim.tests
     ,Data.NGH.Formats.Tests.Embl.tests
     ,Data.NGH.Formats.Tests.Fasta.tests
+    ,Data.NGH.Formats.Tests.FastQ.tests
     ,Data.NGH.Formats.Tests.Gff.tests
     ,Data.NGH.Formats.Tests.Sam.tests
     ]
