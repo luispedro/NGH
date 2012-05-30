@@ -48,7 +48,7 @@ case_mm2 = trimmed @?= expected
 
 case_trimLS = S.length tr @?= 8
     where
-        tr = qualities $ trimLS testdata 8
+        tr = qualities $ trimLS 8 testdata
         testdata = DNAwQuality undefined undefined qs
         qs = S.pack [8,8,8,8,0,8,8,0,8,0,
                             8,8,8,8,

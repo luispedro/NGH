@@ -22,8 +22,8 @@ bSlice start end = (B.drop start) . (B.take end)
 
 
 -- | trim to longest substring
-trimLS :: DNAwQuality -> Word8 -> DNAwQuality
-trimLS sqq@DNAwQuality {dna_seq = sq, qualities = qs} qualthresh = sqq{dna_seq=bSlice st e sq, qualities=bSlice st e qs}
+trimLS :: Word8 -> DNAwQuality -> DNAwQuality
+trimLS qualthresh sqq@DNAwQuality {dna_seq = sq, qualities = qs} = sqq{dna_seq=bSlice st e sq, qualities=bSlice st e qs}
     where
         n = S.length qs
         below = S.findIndices (< qualthresh) qs
