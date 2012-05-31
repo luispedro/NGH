@@ -28,7 +28,7 @@ avgVarQualities (q:qs) = (mu, var)
         zeros dq = VU.replicate (S.length $ dna_seq dq) (0.0 :: Double)
 
 avgVarQualitiesConduit :: (Monad m) => Sink DNAwQuality m (VU.Vector Double, VU.Vector Double)
-avgVarQualitiesConduit = NeedInput first (Done Nothing (VU.empty, VU.empty))
+avgVarQualitiesConduit = NeedInput first (Done (VU.empty, VU.empty))
     where
         first sq = go (0.0, zeros, zeros) sq
             where zeros = VU.replicate (S.length $ dna_seq sq) (0.0 :: Double)
@@ -38,8 +38,7 @@ avgVarQualitiesConduit = NeedInput first (Done Nothing (VU.empty, VU.empty))
                             VU.zipWith (+) s qV,
                             VU.zipWith (+) s2 $ VU.map (**2) qV)
                 qV = VU.fromList . map fromIntegral . S.unpack . qualities $ sq
-        final :: (Double,VU.Vector Double, VU.Vector Double) -> Sink DNAwQuality m (VU.Vector Double, VU.Vector Double)
-        final (n,s,s2) = Done Nothing (mu,var)
+        final (n,s,s2) = Done (mu,var)
             where
                 mu = VU.map (/n) s
                 var = VU.zipWith (\s2i mui -> (s2i/n - mui * mui)) s2 mu

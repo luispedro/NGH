@@ -23,7 +23,7 @@ fastQConduit qualN = start
         push2 h sq _ = NeedInput (push3 h sq) close
         push3 h sq qs = HaveOutput start (return ())
                             DNAwQuality { dna_seq=sq, header=h, qualities=B.map qualN qs }
-        close = Done Nothing ()
+        close = Done ()
 
 fastQparse :: (Word8 -> Word8) -> [B.ByteString] -> [DNAwQuality]
 fastQparse _ [] = []
