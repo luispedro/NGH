@@ -1,3 +1,4 @@
 *.o
 *.hi
 trim-qual
+sam-filter
