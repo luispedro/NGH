@@ -55,5 +55,5 @@ main = do
                     `CL.zipSinks`
             (CL.map fst
                =$ CL.fold (\(!g,!t) v -> (if v then (g+1) else g, t+1)) (0.0 :: Double,0.0 :: Double))
-    putStrLn $ concat ["Processed ", show t, " lines."]
+    putStrLn $ concat ["Processed ", show $ round t, " lines."]
     putStrLn $ concat ["There were matches in ", show $ round g, " (", take 4 $ show (100.0*g/t), "%) of them."]
