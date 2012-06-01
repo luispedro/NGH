@@ -20,7 +20,8 @@ readAlignments' (l:ls)
     | otherwise = (readSamLine l:readAlignments' ls)
 
 readSamLine :: L.ByteString -> SamLine
-readSamLine line = SamLine
+readSamLine line = case L8.split '\t' line of
+    [tk0,tk1,tk2,tk3,tk4,tk5,tk6,tk7,tk8,tk9,tk10] -> SamLine
                 (strict tk0)
                 (read $ L8.unpack tk1)
                 (strict tk2)
@@ -32,8 +33,7 @@ readSamLine line = SamLine
                 (read $ L8.unpack tk8)
                 (strict tk9)
                 (strict tk10)
-    where
-        [tk0,tk1,tk2,tk3,tk4,tk5,tk6,tk7,tk8,tk9,tk10] = L8.split '\t' line
+    tokens -> error $ concat ["Expected 11 tokens, only got ", show $ length tokens,"\n\t\tLine was '", show line, "'"]
 
 strict :: L.ByteString -> S.ByteString
 strict = S.concat . L.toChunks
