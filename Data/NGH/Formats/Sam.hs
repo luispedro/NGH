@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Data.NGH.Formats.Sam
     ( readAlignments
+    , readSamLine
     ) where
 
 import Data.NGH.Alignments
@@ -16,10 +17,10 @@ readAlignments' :: [L.ByteString] -> [SamLine]
 readAlignments' [] = []
 readAlignments' (l:ls)
     | L8.head l == '@' = readAlignments' ls
-    | otherwise = (readLine l:readAlignments' ls)
+    | otherwise = (readSamLine l:readAlignments' ls)
 
-readLine :: L.ByteString -> SamLine
-readLine line = SamLine
+readSamLine :: L.ByteString -> SamLine
+readSamLine line = SamLine
                 (strict tk0)
                 (read $ L8.unpack tk1)
                 (strict tk2)
