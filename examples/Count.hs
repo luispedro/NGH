@@ -7,6 +7,7 @@ import qualified Data.Conduit.Binary as CB -- bytes
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import Data.NGH.FastQ
+import Data.NGH.Formats.FastQ
 
 import Data.Conduit -- the core library
 import Data.Conduit.Zlib (ungzip)
@@ -21,7 +22,7 @@ main = do
             t <- runResourceT $
                     CB.sourceFile fname
                     =$= ungzip
-                    =$= CB.lines
+                    =$= fastQConduit illumina
                     $$ CL.fold (\a _ -> (a+1)) 0
             print (concat ["Nr seqs: ", show t])
         _ -> putStrLn "Usage: runghc Count.hs <FASTQ FILE>"
