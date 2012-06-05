@@ -19,7 +19,7 @@ Library
     Build-Depends:
                 base
                 ,bytestring
-                ,conduit
+                ,conduit >= 0.5
                 ,convertible
                 ,deepseq
                 ,fingertree
