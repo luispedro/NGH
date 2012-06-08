@@ -9,6 +9,7 @@ module Data.NGH.QualityControl
 
 import Data.Word
 import Data.Conduit
+import Data.Conduit.Internal
 import Data.NGH.FastQ
 import Data.List (foldl')
 import qualified Data.ByteString as S
