@@ -13,6 +13,7 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.NGH.FastQ
 import Data.Conduit
+import Control.Monad
 import qualified Data.Conduit.Binary as CB
 
 -- | fastQConduit is a Conduit from B.ByteString to DNAwQuality
@@ -20,15 +21,12 @@ fastQConduit :: (Monad m) => (Word8 -> Word8) -> Conduit B.ByteString m DNAwQual
 fastQConduit q = CB.lines =$= fastQConduit' q
 
 fastQConduit' :: (Monad m) => (Word8 -> Word8) -> Conduit B.ByteString m DNAwQuality
-fastQConduit' qualN = start
-    where
-        start = NeedInput push0 close
-        push0 h = NeedInput (push1 h) close
-        push1 h sq = NeedInput (push2 h sq) close
-        push2 h sq _ = NeedInput (push3 h sq) close
-        push3 h sq qs = HaveOutput start (return ())
-                            DNAwQuality { dna_seq=sq, header=h, qualities=B.map qualN qs }
-        close = Done ()
+fastQConduit' qualN = toPipe . forever $ do
+    h <- await
+    sq <- await
+    void await
+    qs <- await
+    yield $ DNAwQuality { dna_seq = sq, header = h, qualities = B.map qualN qs }
 
 -- | fastQparse read a list of lines and returns a lazy list of DNAwQuality
 fastQparse :: (Word8 -> Word8) -> [B.ByteString] -> [DNAwQuality]
