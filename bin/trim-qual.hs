@@ -20,6 +20,7 @@ import Data.NGH.Trim
 data TrimCmd = TrimCmd
                 { input :: String
                 , output :: String
+                , minQuality :: Int
                 , minLength :: Int
                 , filterAs :: Bool
                 , maxNs :: Maybe Int
@@ -29,6 +30,7 @@ data TrimCmd = TrimCmd
 trimcmds = TrimCmd
             { input = "-" &= argPos 0 &= typ "Input-file"
             , output = "-" &= argPos 1 &= typ "Output-file"
+            , minQuality = 30 &= help "Minimal quality"
             , minLength = 18  &= help "Minimum read length"
             , filterAs = True &= help "Filter A-only sequences"
             , maxNs = Nothing &= help "Maximum number of Ns (default: ∞)"
@@ -63,19 +65,19 @@ strict = S.concat . L.toChunks
 
 main :: IO ()
 main = do
-    TrimCmd finput foutput mL fAs mNs fmt <- cmdArgs trimcmds
+    TrimCmd finput foutput mQ mL fAs mNs fmt <- cmdArgs trimcmds
     let parser = if fmt == "illumina"
                         then illumina
                         else phred
     (_,(g,t)) <- runResourceT $
         (mayunzip finput $ CB.sourceFile finput)
         =$= (fastQConduit parser)
-        =$= CL.map (isgood mL fAs mNs . trimLS 30)
+        =$= CL.map (isgood mL fAs mNs . trimLS (fromIntegral mQ))
         $$ (CL.filter fst
             =$= CL.map (strict . fastQwrite . snd)
             =$ CB.sinkFile foutput)
                     `CU.zipSinks`
             (CL.map fst
-               =$ CL.fold (\(!g,!t) v -> (if v then (g+1) else g, t+1)) (0.0 :: Double,0.0 :: Double))
+               =$ CL.fold (\(!g,!t) v -> (if v then (g+1) else g, t+1)) (0.0 :: Double,0 :: Integer))
     putStrLn $ concat ["Processed ", show t, " sequences."]
-    putStrLn $ concat ["Kept ", show g, " (", take 4 $ show (100.0*g/t), "%) of them."]
+    putStrLn $ concat ["Kept ", show g, " (", take 4 $ show (100.0*g/fromIntegral t), "%) of them."]
