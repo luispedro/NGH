@@ -1,18 +1,18 @@
 {-# LANGUAGE BangPatterns, DeriveDataTypeable #-}
 import System.Console.CmdArgs
-import System.Environment
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy as L
 import Data.NGH.FastQ
 import Data.NGH.Formats.FastQ
-import Data.Void
 import Data.Conduit
+import Data.Conduit.Internal
 import Data.Maybe
+import Data.IORef
 import Data.List (isSuffixOf)
+import Control.Monad.Trans
 import Data.Conduit.Zlib (ungzip)
 import qualified Data.Conduit.List as CL
-import qualified Data.Conduit.Util as CU
 import qualified Data.Conduit.Binary as CB -- bytes
 import Data.NGH.Trim
 
@@ -43,16 +43,19 @@ trimcmds = TrimCmd
 
 
 
+exec_action :: (Monad m) => (a -> m ()) -> Conduit a m a
+exec_action act = await >>= maybe (return ()) (\s -> PipeM (act s >> return (yield s >> exec_action act)))
 
--- mayunzip :: (Monad m, MonadUnsafeIO m, MonadThrow m) => String -> Pipe Void S.ByteString m () -> Pipe Void S.ByteString m ()
-mayunzip finput c
-    | "gz" `isSuffixOf` finput = (c $= ungzip)
-    | otherwise = c
+counter ref = exec_action . const . lift $ modifyIORef ref (+1)
 
-isgood :: Int -> Bool -> Maybe Int ->  DNAwQuality -> (Bool,DNAwQuality)
-isgood mL fA mNs x = (isgood' x, x)
-    where
-        isgood' x = ((S.length $ dna_seq x) > mL)
+
+mayunzip :: (Monad m, MonadUnsafeIO m, MonadThrow m) => String -> Conduit S.ByteString m S.ByteString
+mayunzip finput
+    | "gz" `isSuffixOf` finput = ungzip
+    | otherwise = await >>= maybe (return ()) yield
+
+isgood :: Int -> Bool -> Maybe Int ->  DNAwQuality -> Bool
+isgood mL fA mNs x = ((S.length $ dna_seq x) > mL)
                         &&
                     ((not fA) || (not $ allAs x))
                         &&
@@ -69,15 +72,18 @@ main = do
     let parser = if fmt == "illumina"
                         then illumina
                         else phred
-    (_,(g,t)) <- runResourceT $
-        (mayunzip finput $ CB.sourceFile finput)
+    total <- newIORef (0 :: Integer)
+    good <- newIORef (0.0 :: Double)
+    _ <- runResourceT $
+        CB.sourceFile finput
+        =$= mayunzip finput
         =$= (fastQConduit parser)
-        =$= CL.map (isgood mL fAs mNs . trimLS (fromIntegral mQ))
-        $$ (CL.filter fst
-            =$= CL.map (strict . fastQwrite . snd)
-            =$ CB.sinkFile foutput)
-                    `CU.zipSinks`
-            (CL.map fst
-               =$ CL.fold (\(!g,!t) v -> (if v then (g+1) else g, t+1)) (0.0 :: Double,0 :: Integer))
+        =$= counter total
+        =$= CL.filter (isgood mL fAs mNs . trimLS (fromIntegral mQ))
+        =$= counter good
+        =$= CL.map (strict . fastQwrite)
+        $$ CB.sinkFile foutput
+    t <- readIORef total
+    g <- readIORef good
     putStrLn $ concat ["Processed ", show t, " sequences."]
     putStrLn $ concat ["Kept ", show g, " (", take 4 $ show (100.0*g/fromIntegral t), "%) of them."]
