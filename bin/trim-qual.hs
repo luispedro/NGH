@@ -23,6 +23,7 @@ data TrimCmd = TrimCmd
                 , minLength :: Int
                 , filterAs :: Bool
                 , maxNs :: Int
+                , format :: String
                 } deriving (Eq, Show, Data, Typeable)
 
 trimcmds = TrimCmd
@@ -31,6 +32,7 @@ trimcmds = TrimCmd
             , minLength = 18  &= help "Minimum read length"
             , filterAs = True &= help "Filter A-only sequences"
             , maxNs = -1 &= help "Maximum number of Ns (default: -1, interpreted as ∞)"
+            , format = "illumina" &= help "Format: `illumina` or `sanger`"
             } &=
             verbosity &=
             summary sumtext &=
@@ -61,10 +63,13 @@ strict = S.concat . L.toChunks
 
 main :: IO ()
 main = do
-    TrimCmd finput foutput mL fAs mNs <- cmdArgs trimcmds
+    TrimCmd finput foutput mL fAs mNs fmt <- cmdArgs trimcmds
+    let parser = if fmt == "illumina"
+                        then illumina
+                        else phred
     (_,(g,t)) <- runResourceT $
         (mayunzip finput $ CB.sourceFile finput)
-        =$= (fastQConduit illumina)
+        =$= (fastQConduit parser)
         =$= CL.map (isgood mL fAs mNs . trimLS 30)
         $$ (CL.filter fst
             =$= CL.map (strict . fastQwrite . snd)
