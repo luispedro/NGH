@@ -22,16 +22,16 @@ data TrimCmd = TrimCmd
                 , output :: String
                 , minLength :: Int
                 , filterAs :: Bool
-                , maxNs :: Int
+                , maxNs :: Maybe Int
                 , format :: String
                 } deriving (Eq, Show, Data, Typeable)
 
 trimcmds = TrimCmd
-            { input = "-" &= argPos 0 -- &= help "Input file"
-            , output = "-" &= argPos 1 -- &= help "Output file"
+            { input = "-" &= argPos 0 &= typ "Input-file"
+            , output = "-" &= argPos 1 &= typ "Output-file"
             , minLength = 18  &= help "Minimum read length"
             , filterAs = True &= help "Filter A-only sequences"
-            , maxNs = -1 &= help "Maximum number of Ns (default: -1, interpreted as ∞)"
+            , maxNs = Nothing &= help "Maximum number of Ns (default: ∞)"
             , format = "illumina" &= help "Format: `illumina` or `sanger`"
             } &=
             verbosity &=
@@ -47,14 +47,14 @@ mayunzip finput c
     | "gz" `isSuffixOf` finput = (c $= ungzip)
     | otherwise = c
 
-isgood :: Int -> Bool -> Int ->  DNAwQuality -> (Bool,DNAwQuality)
+isgood :: Int -> Bool -> Maybe Int ->  DNAwQuality -> (Bool,DNAwQuality)
 isgood mL fA mNs x = (isgood' x, x)
     where
         isgood' x = ((S.length $ dna_seq x) > mL)
                         &&
                     ((not fA) || (not $ allAs x))
                         &&
-                    ((mNs < 0) || (S8.count 'N' $ dna_seq x) <= mNs)
+                    (maybe True (\m -> (S8.count 'N' $ dna_seq x) <= m) mNs)
 
 allAs = isNothing . S8.findIndex (/= 'A') . dna_seq
 
