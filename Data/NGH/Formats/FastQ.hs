@@ -21,12 +21,13 @@ fastQConduit :: (Monad m) => (Word8 -> Word8) -> Conduit B.ByteString m DNAwQual
 fastQConduit q = CB.lines =$= fastQConduit' q
 
 fastQConduit' :: (Monad m) => (Word8 -> Word8) -> Conduit B.ByteString m DNAwQuality
-fastQConduit' qualN = toPipe . forever $ do
-    h <- await
-    sq <- await
-    void await
-    qs <- await
-    yield $ DNAwQuality { dna_seq = sq, header = h, qualities = B.map qualN qs }
+fastQConduit' qualN = read1 >>= maybe (return ()) (\s -> yield s >> fastQConduit' qualN)
+    where read1 = await >>= maybe (return Nothing)
+            (\h -> do
+                Just sq <- await
+                void await
+                Just qs <- await
+                return . Just $ DNAwQuality { dna_seq = sq, header = h, qualities = B.map qualN qs })
 
 -- | fastQparse read a list of lines and returns a lazy list of DNAwQuality
 fastQparse :: (Word8 -> Word8) -> [B.ByteString] -> [DNAwQuality]
