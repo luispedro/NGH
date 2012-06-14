@@ -52,7 +52,7 @@ counter ref = exec_action . const . lift $ modifyIORef ref (+1)
 mayunzip :: (Monad m, MonadUnsafeIO m, MonadThrow m) => String -> Conduit S.ByteString m S.ByteString
 mayunzip finput
     | "gz" `isSuffixOf` finput = ungzip
-    | otherwise = await >>= maybe (return ()) yield
+    | otherwise = idP
 
 isgood :: Int -> Bool -> Maybe Int ->  DNAwQuality -> Bool
 isgood mL fA mNs x = ((S.length $ dna_seq x) > mL)
