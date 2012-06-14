@@ -9,7 +9,6 @@ module Data.NGH.QualityControl
 
 import Data.Word
 import Data.Conduit
-import Data.Conduit.Internal
 import Data.NGH.FastQ
 import Data.List (foldl')
 import qualified Data.ByteString as S
@@ -29,17 +28,21 @@ avgVarQualities (q:qs) = (mu, var)
         zeros dq = VU.replicate (S.length $ dna_seq dq) (0.0 :: Double)
 
 avgVarQualitiesConduit :: (Monad m) => Sink DNAwQuality m (VU.Vector Double, VU.Vector Double)
-avgVarQualitiesConduit = NeedInput first (Done (VU.empty, VU.empty))
+avgVarQualitiesConduit = do
+        first <- await
+        case first of
+            Nothing -> return (VU.empty, VU.empty)
+            Just sq -> go (0.0, zeros, zeros) sq
+                where zeros = VU.replicate (S.length $ dna_seq sq) (0.0 :: Double)
     where
-        first sq = go (0.0, zeros, zeros) sq
-            where zeros = VU.replicate (S.length $ dna_seq sq) (0.0 :: Double)
-        go (!n,!s,!s2) sq = NeedInput (go next) (final next)
+        -- go :: (Monad m) => (Double,VU.Vector Double,VU.Vector Double) -> DNAwQuality -> Sink DNAwQuality m (VU.Vector Double, VU.Vector Double)
+        go (!n,!s,!s2) sq = await >>= maybe (final next) (go next)
             where
                 next = (n+1.0,
                             VU.zipWith (+) s qV,
                             VU.zipWith (+) s2 $ VU.map (**2) qV)
                 qV = VU.fromList . map fromIntegral . S.unpack . qualities $ sq
-        final (n,s,s2) = Done (mu,var)
+        final (n,s,s2) = return (mu,var)
             where
                 mu = VU.map (/n) s
                 var = VU.zipWith (\s2i mui -> (s2i/n - mui * mui)) s2 mu
