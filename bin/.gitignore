@@ -2,3 +2,4 @@
 *.hi
 trim-qual
 sam-filter
+embl-to-fasta
