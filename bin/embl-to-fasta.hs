@@ -19,11 +19,20 @@ e2fcmds = E2FCmd
         , output = "-" &= argPos 1 &= typ "Output-file"
         } &=
         verbosity &=
+        summary sumtext &=
         details ["Convert Embl to Fasta files"]
+    where sumtext = "embl-to-fasta v0.1 (C) Luis Pedro Coelho 2012"
 
 main :: IO ()
 main = do
     E2FCmd inputf outputf <- cmdArgs e2fcmds
     let header = L.concat [L8.pack "converted from ", L8.pack inputf]
-    (L.readFile inputf) >>= (L.writeFile outputf . writeSeq 72 header . fromJust . readSeq . decompress)
+        writer = if outputf == "-"
+                        then L.putStr
+                        else L.writeFile outputf
+        reader = if inputf == "-"
+                        then L.getContents
+                        else L.readFile inputf
+    reader >>= (writer . writeSeq 72 header . fromJust . readSeq . decompress)
+
     
