@@ -30,7 +30,7 @@ text = "\
 
 strict = S.concat . L.toChunks
 
-case_read_write = (strict . L.concat . map fastQwrite . fastQread illumina) text @?= strict text
+case_read_write = (strict . L.concat . map (fastQwrite illumina) . fastQread illumina) text @?= strict text
 
 case_read = (length . fastQread illumina) text @?= 3
 

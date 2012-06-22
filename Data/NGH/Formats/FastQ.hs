@@ -30,24 +30,22 @@ fastQConduit' qualN = read1 >>= maybe (return ()) (\s -> yield s >> fastQConduit
                 return . Just $ DNAwQuality { dna_seq = sq, header = h, qualities = B.map (flip (-) qualN) qs })
 
 -- | fastQparse read a list of lines and returns a lazy list of DNAwQuality
-fastQparse :: (Word8 -> Word8) -> [B.ByteString] -> [DNAwQuality]
+fastQparse :: Word8 -> [B.ByteString] -> [DNAwQuality]
 fastQparse _ [] = []
 fastQparse qualN (h:sq:_:qs:rest) = (first:fastQparse qualN rest)
-    where first = DNAwQuality { dna_seq=sq, header=h, qualities=B.map qualN qs }
+    where first = DNAwQuality { dna_seq=sq, header=h, qualities=B.map (flip (-) qualN) qs }
 fastQparse _ _ = error "Data.NGH.FastQ.fastQparse: incomplete record"
 
-fastQread :: (Word8 -> Word8) -> L.ByteString -> [DNAwQuality]
+fastQread :: Word8 -> L.ByteString -> [DNAwQuality]
 fastQread qualN = fastQparse qualN . map (S.concat . L.toChunks) . L8.lines
 
 
 -- | fastQwrite is to write in FastQ format. It does no IO, but formats it as a string
-fastQwrite :: DNAwQuality -> L.ByteString
-fastQwrite s = L.fromChunks
-                    [header s
+fastQwrite :: Word8 -> DNAwQuality -> L.ByteString
+fastQwrite qualN DNAwQuality {header=h,dna_seq=s,qualities=qs} = L.fromChunks
+                    [h
                     ,S8.pack "\n"
-                    ,dna_seq s
+                    ,s
                     ,S8.pack "\n+\n"
-                    ,encodeQ $ qualities s
+                    ,S.map (+ qualN) qs
                     ,S8.pack "\n"]
-
-encodeQ = S.map (+ (fromIntegral (64::Int)))
