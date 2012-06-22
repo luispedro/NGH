@@ -3,21 +3,17 @@ import System.Console.CmdArgs
 import System.Posix.Files
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
-import qualified Data.ByteString.Lazy as L
 import Data.NGH.FastQ
 import Data.NGH.Formats.FastQ
 import Data.Conduit
-import Data.Conduit.Internal
 import Data.Maybe
 import Data.IORef
-import Data.List (isSuffixOf)
 import Control.Monad
-import Control.Monad.Trans
-import Data.Conduit.Zlib (ungzip)
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Binary as CB -- bytes
 import Data.NGH.Trim
 
+import Utils
 
 data TrimCmd = TrimCmd
                 { input :: String
@@ -45,35 +41,6 @@ trimcmds = TrimCmd
 
 
 
-exec_action :: (Monad m) => (a -> m ()) -> Conduit a m a
-exec_action act = await >>= maybe (return ()) (\s -> PipeM (act s >> return (yield s >> exec_action act)))
-
-
-modifyIORef' ref f = do
-    x <- readIORef ref
-    let x' = f x
-    x' `seq` writeIORef ref x'
-
-counter ref = exec_action . const . lift $ modifyIORef' ref (+1)
-
-progress totalSize sizef = do
-        partialref <- newIORef (0 :: Integer)
-        return $ \s -> do
-            v0 <- lift (readIORef partialref)
-            lift $ modifyIORef' partialref (+ sizef s)
-            v1 <- lift (readIORef partialref)
-            when (roundP v0 /= roundP v1)
-                (liftIO $ putStrLn $ concat ["Finished ", show . roundP $ v1, "%"])
-    where
-        roundP v = 5 * (round $ fromIntegral v / fromIntegral totalSize * 20.0)
-
-transformif cond trans
-    | cond = trans
-    | otherwise = idP
-
-mayunzip :: (Monad m, MonadUnsafeIO m, MonadThrow m) => String -> Conduit S.ByteString m S.ByteString
-mayunzip finput = transformif ("gz" `isSuffixOf` finput) ungzip
-
 isgood :: Int -> Bool -> Maybe Int ->  DNAwQuality -> Bool
 isgood mL fA mNs x = ((S.length $ dna_seq x) > mL)
                         &&
@@ -82,9 +49,6 @@ isgood mL fA mNs x = ((S.length $ dna_seq x) > mL)
                     (maybe True (\m -> (S8.count 'N' $ dna_seq x) <= m) mNs)
 
 allAs = isNothing . S8.findIndex (/= 'A') . dna_seq
-
-strict :: L.ByteString -> S.ByteString
-strict = S.concat . L.toChunks
 
 main :: IO ()
 main = do
