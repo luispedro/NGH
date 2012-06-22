@@ -2,6 +2,7 @@ module Data.NGH.FastQ
     ( DNAwQuality(..)
     , phred
     , illumina
+    , guess_format
     ) where
 
 import Data.Word
@@ -13,8 +14,13 @@ data DNAwQuality = DNAwQuality
             , qualities :: B.ByteString
             } deriving (Eq,Show)
 
-phred :: Word8 -> Word8
-phred c = c - (fromIntegral (33::Int))
+phred :: Word8
+phred = fromIntegral (33::Int)
 
-illumina :: Word8 -> Word8
-illumina c = c - (fromIntegral (64::Int))
+illumina :: Word8
+illumina = fromIntegral (64::Int)
+
+guess_format :: [Word8] -> Word8
+guess_format qs
+    | any (< (fromIntegral (64 :: Int))) qs = phred
+    | otherwise = illumina
