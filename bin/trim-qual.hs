@@ -68,7 +68,7 @@ main = do
         =$= counter total
         =$= CL.filter (isgood mL fAs mNs . trimLS (fromIntegral mQ))
         =$= counter good
-        =$= CL.map (strict . fastQwrite)
+        =$= CL.map (strict . fastQwrite parser)
         $$ CB.sinkFile foutput
     t <- readIORef total
     g <- readIORef good
