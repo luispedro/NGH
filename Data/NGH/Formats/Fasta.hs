@@ -13,7 +13,7 @@ writeSeq :: Int -- ^ Width of the lines to use
             -> L.ByteString -- ^ Header
             -> L.ByteString -- ^ The DNA sequence
             -> L.ByteString -- ^ The output
-writeSeq lw header s = L.fromChunks (["> ", S.concat $ L.toChunks header, "\n"] ++ breakup lw s)
+writeSeq lw header s = L.fromChunks ([">"] ++ L.toChunks header ++ ["\n"] ++ breakup lw s)
 
 breakup :: Int -> L.ByteString -> [S.ByteString]
 breakup n s | n < 0 = L.toChunks s
