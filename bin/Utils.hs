@@ -5,6 +5,8 @@ module Utils
     , counter
     , progress
     , mayunzip
+    , reader
+    , writer
     ) where
 
 import qualified Data.ByteString as S
@@ -57,4 +59,10 @@ transformif cond trans
 mayunzip :: (Monad m, MonadUnsafeIO m, MonadThrow m) => String -> Conduit S.ByteString m S.ByteString
 mayunzip finput = transformif ("gz" `isSuffixOf` finput) ungzip
 
+reader :: String -> IO L.ByteString
+reader "-" = L.getContents
+reader inputf = L.readFile inputf
 
+writer :: String -> (L.ByteString -> IO ())
+writer "-" = L.putStr
+writer outputf = L.writeFile outputf
