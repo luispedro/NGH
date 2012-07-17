@@ -1,6 +1,9 @@
-all: trim-qual sam-filter embl-to-fasta fastq
+BINS = trim-qual sam-filter embl-to-fasta fastq
 GHCOPTS = -O2 -threaded -rtsopts -Wall -fwarn-tabs -fno-warn-missing-signatures
 
+all: $(BINS)
+clean:
+	rm -f $(BINS)
 trim-qual: trim-qual.hs Utils.hs
 	ghc -o $@ $< $(GHCOPTS)
 
@@ -13,5 +16,5 @@ embl-to-fasta: embl-to-fasta.hs
 fastq: fastq.hs Utils.hs
 	ghc -o $@ $< $(GHCOPTS)
 
-.PHONY: all
+.PHONY: all clean
 

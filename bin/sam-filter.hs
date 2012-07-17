@@ -13,17 +13,21 @@ import Data.Conduit.Zlib (ungzip)
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Binary as CB -- bytes
 import Data.NGH.Trim
-import ParBuffer
+import Control.Monad
+import Data.IORef
 
+import Utils
 
 data SamCmd = SamCmd
                 { input :: String
                 , output :: String
+                , quiet :: Bool
                 } deriving (Eq, Show, Data, Typeable)
 
 samcmds = SamCmd
             { input = "-" &= argPos 0
             , output = "-" &= argPos 1
+            , quiet = False &= help "quiet"
             } &=
             verbosity &=
             summary sumtext &=
@@ -33,27 +37,27 @@ samcmds = SamCmd
 
 
 
--- mayunzip :: (Monad m, MonadUnsafeIO m, MonadThrow m) => String -> Pipe Void S.ByteString m () -> Pipe Void S.ByteString m ()
-mayunzip finput c
-    | "gz" `isSuffixOf` finput = (c $= parBufferN 32 ungzip)
-    | otherwise = c
-
 strict :: L.ByteString -> S.ByteString
 strict = S.concat . L.toChunks
 
 main :: IO ()
 main = do
-    SamCmd finput foutput <- cmdArgs samcmds
-    (_,(g,t)) <- runResourceT $
-        (mayunzip finput $ CB.sourceFile finput)
+    SamCmd finput foutput q <- cmdArgs samcmds
+    total <- newIORef (0.0 :: Double)
+    good <- newIORef (0.0 :: Double)
+    _ <- runResourceT $
+        CB.sourceFile finput
+        =$= mayunzip finput
         =$= CB.lines
         =$= CL.filter ((/='@').S8.head)
-        =$= CL.map (\ell -> (isAligned $ readSamLine $ L.fromChunks [ell], ell))
-        $$ (CL.filter fst
-            =$= CL.map (\(_,s) -> S.concat [s,S8.pack "\n"])
-            =$ CB.sinkFile foutput)
-                    `CL.zipSinks`
-            (CL.map fst
-               =$ CL.fold (\(!g,!t) v -> (if v then (g+1) else g, t+1)) (0.0 :: Double,0.0 :: Double))
-    putStrLn $ concat ["Processed ", show $ round t, " lines."]
-    putStrLn $ concat ["There were matches in ", show $ round g, " (", take 4 $ show (100.0*g/t), "%) of them."]
+        =$= counter total
+        =$= CL.filter (\ell -> (isAligned $ readSamLine $ L.fromChunks [ell]))
+        =$= counter good
+        =$= CL.map (\s -> S.concat [s,S8.pack "\n"])
+        $$ CB.sinkFile foutput
+    t <- readIORef total
+    g <- readIORef good
+    unless q
+        (putStrLn $ concat ["Processed ", show $ round t, " lines."])
+    unless q
+        (putStrLn $ concat ["There were matches in ", show $ round g, " (", take 4 $ show (100.0*g/t), "%) of them."])
