@@ -21,13 +21,11 @@ import Utils
 data SamCmd = SamCmd
                 { input :: String
                 , output :: String
-                , quiet :: Bool
                 } deriving (Eq, Show, Data, Typeable)
 
 samcmds = SamCmd
-            { input = "-" &= argPos 0
-            , output = "-" &= argPos 1
-            , quiet = False &= help "quiet"
+            { input = "-" &= argPos 0 &= typ "Input-file"
+            , output = "-" &= argPos 1 &= typ "Output-file"
             } &=
             verbosity &=
             summary sumtext &=
@@ -36,17 +34,15 @@ samcmds = SamCmd
 
 
 
-
-strict :: L.ByteString -> S.ByteString
-strict = S.concat . L.toChunks
-
 main :: IO ()
 main = do
-    SamCmd finput foutput q <- cmdArgs samcmds
+    SamCmd finput foutput <- cmdArgs samcmds
+    v <- getVerbosity
+    let q = v == Quiet
     total <- newIORef (0.0 :: Double)
     good <- newIORef (0.0 :: Double)
     _ <- runResourceT $
-        CB.sourceFile finput
+        readerC finput
         =$= mayunzip finput
         =$= CB.lines
         =$= CL.filter ((/='@').S8.head)
@@ -54,7 +50,7 @@ main = do
         =$= CL.filter (\ell -> (isAligned $ readSamLine $ L.fromChunks [ell]))
         =$= counter good
         =$= CL.map (\s -> S.concat [s,S8.pack "\n"])
-        $$ CB.sinkFile foutput
+        $$ writerC foutput
     t <- readIORef total
     g <- readIORef good
     unless q

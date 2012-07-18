@@ -7,10 +7,13 @@ module Utils
     , mayunzip
     , reader
     , writer
+    , readerC
+    , writerC
     ) where
 
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
+import qualified Data.Conduit.Binary as CB -- bytes
 import Data.Conduit
 import Data.Conduit.Internal
 import Data.IORef
@@ -18,6 +21,7 @@ import Data.List (isSuffixOf)
 import Control.Monad
 import Control.Monad.Trans
 import Data.Conduit.Zlib (ungzip)
+import System.IO
 
 
 strict :: L.ByteString -> S.ByteString
@@ -66,3 +70,10 @@ reader inputf = L.readFile inputf
 writer :: String -> (L.ByteString -> IO ())
 writer "-" = L.putStr
 writer outputf = L.writeFile outputf
+
+readerC :: (MonadIO m, MonadResource m) => String -> GSource m S.ByteString
+readerC "-" = CB.sourceHandle stdin
+readerC inputf = CB.sourceFile inputf
+
+writerC "-" = CB.sinkHandle stdout
+writerC outputf = CB.sinkFile outputf
