@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Data.NGH.Alignments
     ( SamLine(..)
     , isAligned
@@ -9,14 +11,14 @@ import Control.DeepSeq
 
 data SamLine = SamLine
             { samQName :: S.ByteString
-            , samFlag :: Int
+            , samFlag :: !Int
             , samRName :: S.ByteString
-            , samPos :: Int
-            , samMapq :: Int
+            , samPos :: !Int
+            , samMapq :: !Int
             , samCigar :: S.ByteString
             , samRNext :: S.ByteString
-            , samPNext :: Int
-            , samTLen :: Int
+            , samPNext :: !Int
+            , samTLen :: !Int
             , samSeq :: S.ByteString
             , samQual :: S.ByteString
             } deriving (Eq, Show)
