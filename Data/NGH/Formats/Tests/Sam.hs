@@ -31,6 +31,8 @@ test_file = "\
     \SRR065639.3 SOLEXAWS1_0001:1:1:4:456 length=75\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n\
     \SRR065639.4 SOLEXAWS1_0001:1:1:4:207 length=75\t4\t*\t0\t0\t*\t*\t0\t0\t*\t*\n"
 
+bowtie_extra = "FCC0PHYACXX:7:1101:1354:2168#0/1\t4\t*\t0\t0\t*\t*\t0\t0\tAAGTTAGTTCAGTCTACATCCAGAAATGAGCAAGAGCAGCTTGGAGGTT\tabbceeecggggghiiiiiiiiiiiiiiiihiiighhiiiiiiifhicg\tYT:Z:UU\n"
+
 alignments = readAlignments test_file
 
 tests = $(testGroupGenerator)
@@ -39,3 +41,4 @@ case_all = (length alignments) @?= 7
 case_aligned = (length $ filter isAligned alignments) @?= 4
 case_flagNot4 = (null $ filter ((==4) . samFlag) $ filter isAligned alignments) @? "Should be empty"
 
+case_bowtie = (length $ readAlignments bowtie_extra) @?= 1

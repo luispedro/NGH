@@ -21,7 +21,7 @@ readAlignments' (l:ls)
 
 readSamLine :: L.ByteString -> SamLine
 readSamLine line = case L8.split '\t' line of
-    [tk0,tk1,tk2,tk3,tk4,tk5,tk6,tk7,tk8,tk9,tk10] -> SamLine
+    (tk0:tk1:tk2:tk3:tk4:tk5:tk6:tk7:tk8:tk9:tk10:_) -> SamLine
                 (strict tk0)
                 (read $ L8.unpack tk1)
                 (strict tk2)
