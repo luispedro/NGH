@@ -20,6 +20,7 @@ Library
                 base
                 ,bytestring
                 ,conduit >= 0.5
+                ,containers
                 ,convertible
                 ,deepseq
                 ,fingertree
@@ -30,6 +31,7 @@ Library
                 ,Data.NGH.Alignments
                 ,Data.NGH.Annotation
                 ,Data.NGH.FastQ
+                ,Data.NGH.PSSM
                 ,Data.NGH.SuffixTree
                 ,Data.NGH.SuffixTrie
                 ,Data.NGH.Trim
